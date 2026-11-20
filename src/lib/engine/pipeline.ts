@@ -68,7 +68,7 @@ export interface IngestResult {
  * últimas 24 h. Las respuestas a lo que el dueño escribe no cuentan.
  */
 export async function sendCapped(store: Store, body: string): Promise<{ status: WhatsAppMessage["status"]; sid?: string; error?: string }> {
-  const cap = Number(process.env.PULSO_WHATSAPP_DAILY_CAP ?? 15);
+  const cap = Number(process.env.PULSO_WHATSAPP_DAILY_CAP ?? 100);
   const since = Date.now() - 24 * 3600_000;
   const sent = (await store.listMessages()).filter(
     (m) => m.direction === "saliente" && m.kind !== "respuesta" && m.status === "enviado" && Date.parse(m.createdAt) >= since,
