@@ -3,88 +3,122 @@
 **El estado de tu empresa, leído de tu correo.**
 
 > Proyecto del equipo **WildDogs** para el Dojo AI Hackathon (Track 02: Build for Business, noviembre 2026).
-> *Este README es una base: completá las secciones marcadas con [ ] a medida que construís.*
 
 ---
 
 ## 1. Qué hace y para quién
 
-**El problema, en dos líneas:** las pymes de Costa Rica reciben decenas de facturas, avisos de Hacienda y la CCSS, cobros y mensajes del contador en un solo correo que nadie revisa con calma. Ahí se pierden vencimientos, se pagan facturas duplicadas o infladas y se usan facturas que Hacienda rechazó.
+**El problema, en dos líneas:** las pymes de Costa Rica reciben facturas, avisos de Hacienda y la CCSS, cobros y mensajes del contador, todo en un solo correo que nadie revisa con calma. Ahí se pierden vencimientos, se pagan facturas duplicadas o infladas y se usan facturas que Hacienda rechazó.
 
-**La solución:** Pulso se conecta al correo, lee las facturas electrónicas directo del XML, revisa si Hacienda las aceptó, detecta lo que no cuadra y avisa al dueño por WhatsApp con la evidencia. El dueño responde "1" y Pulso le deja listo el correo para resolverlo. Nada se envía sin su aprobación.
+**La solución:** Pulso se conecta al correo y le arma al dueño el **estado de su empresa**: qué debe, qué vence, qué le deben y qué no cuadra. Lee las facturas electrónicas directo del XML, revisa si Hacienda las aceptó, detecta riesgos con evidencia y le manda **señales por WhatsApp**. El dueño responde "1" y Pulso le deja listo el correo para resolverlo. **Nada se envía sin su aprobación.**
 
 **Para quién:** dueños y administradores de pymes de 2 a 30 personas (restaurantes, comercios, servicios) que reciben facturas por correo y trabajan con un contador externo. Funciona con cualquier sistema contable, o sin ninguno.
 
 *Alegra administra lo que ya registraste. Pulso vigila lo que está llegando a tu empresa.*
 
-### Funciones
-- Semáforo de salud de la empresa (verde, amarillo o rojo) con montos y fuentes.
-- Posibles duplicados, montos fuera de lo normal, cobros sin factura y facturas rechazadas por Hacienda, cada uno con nivel de confianza y evidencia lado a lado.
-- Alertas por WhatsApp: "1" prepara el borrador en Gmail, "2" marca el caso como normal y Pulso lo aprende.
-- Pagos vencidos y próximos, cobros pendientes, "Tu semana" y cierre mensual para el contador.
-- Bitácora visible de lo que hizo el agente.
-
-[ ] Capturas de pantalla / GIF
-[ ] Link a la app desplegada
-[ ] Link al pitch deck y al video
+### Qué hace hoy
+- **Semáforo de salud** (verde, amarillo o rojo) con lo vencido, lo que no cuadra, lo que vence en 7 días y el dinero en riesgo.
+- **Lee las facturas electrónicas del XML con código** (montos exactos) y la **respuesta de Hacienda** (aceptada / rechazada / sin respuesta).
+- **Detecta riesgos con reglas explícitas y nivel de confianza:** posible duplicado (exacto o probable), monto fuera de lo normal según el historial del proveedor, cobro sin factura, factura rechazada por Hacienda y vencidos (por pagar y por cobrar).
+- **Evidencia lado a lado:** los dos documentos comparados, el historial del proveedor, la regla aplicada.
+- **WhatsApp:** alerta agrupada; respondés **1** (preparar correo), **2** (es normal) o **VER** (detalle).
+- **Aprende de tus decisiones:** "es normal" crea una regla acotada al proveedor; los casos parecidos quedan en gris sin molestar. Nunca aprende a ignorar un rechazo de Hacienda.
+- **Borradores con aprobación:** correo al proveedor, cobro al cliente o recordatorio, listos para copiar o abrir en tu correo.
+- **Tu semana**, lo que te deben, tu correo ordenado por categoría y la **bitácora** de lo que hizo el agente.
 
 ---
 
 ## 2. Cómo correrlo
 
 ### Requisitos
-- Node.js 20+
-- Cuenta de Supabase, API key de Claude, cuenta de Twilio (sandbox de WhatsApp) y, para Gmail real, un proyecto de Google Cloud con OAuth.
+- Node.js 20 o superior (probado con Node 22).
+- Nada más para la demo. Las llaves de Claude, Supabase y Twilio son opcionales (ver abajo).
 
-### Pasos
+### En 3 pasos
 ```bash
-git clone [URL del repo]
+git clone https://github.com/kvargas-devCruz/pulso.git
 cd pulso
 npm install
-cp .env.example .env.local   # completar las variables (ver abajo)
-[ ] comando para aplicar las migraciones de Supabase
-npm run dev                  # http://localhost:3000
+npm run dev            # http://localhost:3000
 ```
+En el panel, tocá **"Probar con la bandeja de prueba"** (Ferretería El Roble S.A., empresa ficticia).
 
-### Probarlo sin conectar nada (modo demo)
-1. Abrí la app y elegí **"Usar bandeja de prueba"** (Ferretería El Roble S.A., empresa ficticia).
-2. Tocá **"Procesar bandeja"**.
-3. Revisá el semáforo, las alertas y la evidencia.
-4. Para WhatsApp: uní tu celular al sandbox de Twilio y poné tu número en `OWNER_WHATSAPP_TO`.
+### Guion de la demo
+1. **Probar con la bandeja de prueba** → semáforo en rojo, bitácora y 7 riesgos.
+2. En "Monto fuera de lo normal" de **Maderas El Pinar**, tocá **Es normal** (temporada navideña).
+3. Tocá **📩 Llegó un correo nuevo** → aparece el **posible duplicado** de Distribuidora del Valle y llega la alerta al WhatsApp.
+4. **Ver evidencia** → las dos facturas lado a lado (misma clave, mismo consecutivo).
+5. En el celular de la derecha respondé **1** → el correo al proveedor queda listo. No se envió nada.
+6. La nueva factura de temporada de Maderas El Pinar quedó en gris: *normal según tu decisión*.
 
-### Medir la precisión
+**Reiniciar** borra los datos de prueba para volver a empezar.
+
+### Conectar los servicios reales (opcional)
+Copiá `.env.example` a `.env.local` y completá lo que quieras usar:
+
+| Variable | Para qué | Sin ella |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Claude entiende los correos sin XML (avisos, cobros, solicitudes) | Se usa una heurística determinista |
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Guardar todo en Supabase (fuente de verdad en producción) | Se guarda en `.data/pulso.json` |
+| `TWILIO_*`, `OWNER_WHATSAPP_TO` | Enviar y recibir WhatsApp de verdad (sandbox de Twilio) | WhatsApp simulado en el panel |
+| `APP_URL` | Links dentro de los mensajes de WhatsApp | `http://localhost:3000` |
+| `PULSO_TODAY` | Fijar el "hoy" (la demo usa 2026-11-20) | Fecha actual de Costa Rica |
+
+**Supabase:** en el SQL Editor de tu proyecto, ejecutá `supabase/migrations/0001_init.sql`.
+**WhatsApp (Twilio Sandbox):** uní tu celular al sandbox y configurá el webhook "When a message comes in" a `https://TU-APP/api/whatsapp/webhook` (POST).
+
+### Pruebas
 ```bash
-npm run eval   # procesa data/bandeja-prueba y compara contra resumen.md
+npm test         # pruebas unitarias del lector de XML, las heurísticas y las reglas
+npm run eval     # procesa la bandeja de prueba de punta a punta y la compara con esperado.json
+npm run build    # compilación de producción
 ```
 
-### Variables de entorno
-Ver `.env.example` y la sección "Variables de entorno" en `CLAUDE.md`.
+Resultado actual de `npm run eval` (sin Claude):
+```
+Extracción (lote 1): categoría, tipo, monto, vencimiento, estado y Hacienda: 100 %
+Alertas: 8/8 plantadas detectadas · 0 falsos positivos
+Aprendizaje: la factura de temporada del lote 2 quedó como normal_aprendido
+```
+> Honestidad sobre esa cifra: las facturas y su estado en Hacienda se leen del XML (exacto). Para los correos sin XML, la heurística se escribió conociendo la bandeja de prueba, así que el 100 % mide que el flujo funciona, no la precisión con correos reales. Con correos reales, la extracción de texto la hace Claude (`ANTHROPIC_API_KEY`); medir eso con correos reales del restaurante es el siguiente paso.
 
 ---
 
 ## 3. Cómo usé agentic coding
 
-**Herramienta:** Claude Code (con Claude Pro), más la API de Claude dentro del producto.
+**Herramientas:** Claude (Claude Code) para planear y construir, y la API de Claude dentro del producto.
 
 **Flujo de trabajo:**
-1. **Criterio primero.** Antes de escribir código definí el producto en `PRD.md`, las decisiones técnicas en `docs/adr/` y las reglas para el agente en `CLAUDE.md`.
-2. **Construcción por bloques.** Viernes: el cerebro (ingesta, XML, Hacienda, extracción, panel). Sábado: la inteligencia (reglas, semáforo, evidencia, WhatsApp, aprendizaje). Domingo: Gmail real, PDF, cierre mensual y pulido.
-3. **Verificación.** `npm run eval` compara cada cambio contra la respuesta esperada de la bandeja de prueba.
-4. **Revisión humana.** Yo revisé cada cambio del agente contra el PRD y los ADRs.
+1. **Criterio primero.** Antes de escribir código definí el producto en [`PRD.md`](PRD.md), las decisiones técnicas en [`docs/adr/`](docs/adr/) y las reglas para el agente en [`CLAUDE.md`](CLAUDE.md).
+2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 38 correos ficticios con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
+3. **Construcción por bloques**, cada uno verificado con build, pruebas y eval antes de seguir (ver [`docs/bitacora-hackathon.md`](docs/bitacora-hackathon.md)).
+4. **Revisión visual:** el agente abrió el panel en un navegador sin interfaz, ejecutó el flujo completo de la demo y revisó capturas de escritorio y celular (así encontró y corrigió un desborde horizontal en el celular).
+5. **Revisión humana** de cada decisión contra el PRD y los ADRs.
 
-**Archivos en el repo:**
+**Archivos:**
 - [`PRD.md`](PRD.md): qué es el producto, para quién, qué hace y qué no.
-- [`docs/adr/`](docs/adr/): 7 decisiones de arquitectura (flujo central, números desde XML, reglas con confianza, aprobación humana, WhatsApp, stack, reglas aprendidas).
-- [`CLAUDE.md`](CLAUDE.md): instrucciones y reglas que el agente sigue en este repo.
-- [`docs/PLAYBOOK.md`](docs/PLAYBOOK.md): los prompts que usé, bloque por bloque (entrevista del PRD, plan mode, una sesión por feature, pruebas).
+- [`docs/adr/`](docs/adr/): 7 decisiones de arquitectura.
+- [`CLAUDE.md`](CLAUDE.md): instrucciones y reglas que sigue el agente.
+- [`docs/PLAYBOOK.md`](docs/PLAYBOOK.md): los prompts por bloque.
 - [`docs/bitacora-hackathon.md`](docs/bitacora-hackathon.md): qué se hizo cada día, desde el punto de partida.
-- [`data/bandeja-prueba/`](data/bandeja-prueba/): 38 correos ficticios con casos plantados y su respuesta esperada (`esperado.json`), generados con [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py). Con eso, `npm run eval` mide cuánto acierta el agente.
-
-[ ] Punto de partida (cómo estaba el proyecto al iniciar el hackathon)
-[ ] Qué construyó el agente y qué ajusté yo
-[ ] Lecciones aprendidas
 
 ---
 
+## Arquitectura en una imagen
+```
+Fuentes (adaptadores)        Motor (src/lib/engine)                 Salidas
+bandeja demo ─┐     guardar + hash → XML (código) → Hacienda →     ┌─ Panel
+Gmail ────────┴──►  extraer (Claude | heurística) → clasificar → ──┼─ WhatsApp
+                    reglas (confianza) → lo aprendido → explicar    └─ Borradores
+                                      │
+                         Store: Supabase (producción) | archivo local (demo)
+```
+
 ## Privacidad
-Gmail en solo lectura más borradores (nunca envía correos). Los datos de cada empresa están aislados y se pueden borrar. Los WhatsApp solo llevan un resumen y un link. La bandeja de prueba es 100% ficticia.
+Gmail en solo lectura más borradores (nunca envía correos). Nada se envía sin aprobación. Los WhatsApp llevan un resumen y un link, no el XML. La bandeja de prueba es 100 % ficticia.
+
+## Pendiente
+- Conexión real con Gmail (OAuth `gmail.readonly` + `gmail.compose`) y guardar los borradores en Gmail.
+- Leer PDF e imágenes con la visión de Claude.
+- Cierre mensual para el contador.
+- Prueba con correos reales de un restaurante.
