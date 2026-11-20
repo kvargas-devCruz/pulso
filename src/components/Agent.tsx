@@ -12,6 +12,7 @@ export interface LiveRunState {
   steps: LiveStep[] | null; // null = todavía procesando
   alerts: LiveAlert[];
   headline: string | null;
+  notified?: boolean;
 }
 
 const STEP_LABEL: Record<string, string> = {
@@ -40,7 +41,7 @@ function Pending() {
   return <span className="h-5 w-5 shrink-0 rounded-full border-2 border-line" aria-hidden />;
 }
 
-export function LiveRun({ run, onClose, onOpenAlert }: { run: LiveRunState; onClose: () => void; onOpenAlert: (id: string) => void }) {
+export function LiveRun({ run, onClose, onOpenAlert, onOpenWhatsApp }: { run: LiveRunState; onClose: () => void; onOpenAlert: (id: string) => void; onOpenWhatsApp?: () => void }) {
   // Pasos reales del pipeline, revelados uno por uno cuando llega la respuesta.
   const [shown, setShown] = useState(0);
   const total = run.steps?.length ?? 0;
@@ -87,6 +88,11 @@ export function LiveRun({ run, onClose, onOpenAlert }: { run: LiveRunState; onCl
           ))}
           {run.alerts.length > 3 && <p className="px-1 text-xs text-muted">y {run.alerts.length - 3} más en «Lo que no cuadra».</p>}
         </div>
+      )}
+      {done && run.notified && onOpenWhatsApp && (
+        <button onClick={onOpenWhatsApp} className="mt-2 flex w-full items-center gap-2 rounded-xl bg-[#e7f8ee] px-3 py-2 text-left text-sm text-[#075e54] transition hover:brightness-95">
+          <span aria-hidden>📱</span><span className="flex-1">Te avisé por WhatsApp</span><span className="text-xs">ver el mensaje →</span>
+        </button>
       )}
       {done && run.alerts.length === 0 && <p className="mt-4 rounded-xl bg-green-soft px-3 py-2 text-sm text-green">Nada nuevo que no cuadre. ✅</p>}
     </Card>

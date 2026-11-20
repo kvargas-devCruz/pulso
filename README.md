@@ -52,7 +52,7 @@ En el panel, tocá **"Probar con la bandeja de prueba"** (Ferretería El Roble S
 2. En "Monto fuera de lo normal" de **Maderas El Pinar**, tocá **Es normal** (temporada navideña).
 3. Tocá **📩 Llegó un correo nuevo** → Pulso muestra lo que hace paso a paso y termina en el **posible duplicado** de Distribuidora del Valle; la alerta llega al WhatsApp.
 4. **Ver evidencia** → las dos facturas lado a lado (misma clave, mismo consecutivo).
-5. En el celular de la derecha respondé **1** → el correo al proveedor queda listo. No se envió nada.
+5. En la sección **WhatsApp** respondé **1** → el correo al proveedor queda listo. No se envió nada.
 6. La nueva factura de temporada de Maderas El Pinar quedó en gris: *normal según tu decisión*.
 
 **Reiniciar** borra los datos de prueba para volver a empezar.

@@ -9,7 +9,7 @@ import { BarChart, CATEGORY_COLOR, Donut, KpiCard, METHOD_COLOR, STATUS_COLOR, c
 
 type AlertView = PulsoState["alerts"][number];
 type DocView = PulsoState["documents"][number];
-type View = "inicio" | "correo" | "plata";
+type View = "inicio" | "correo" | "plata" | "whatsapp";
 
 const LIGHT = {
   rojo: { dot: "bg-red", soft: "bg-red-soft", text: "text-red", label: "Rojo" },
@@ -40,6 +40,7 @@ export function Dashboard() {
   const [view, setView] = useState<View>("inicio");
   const [cat, setCat] = useState<string>("todos");
   const [live, setLive] = useState<LiveRunState | null>(null);
+  const [seenMsgs, setSeenMsgs] = useState(0);
 
   const refresh = useCallback(async () => {
     const s = await api<PulsoState>("/api/state");
@@ -112,9 +113,9 @@ export function Dashboard() {
     setBusy(lote);
     setLive({ label, steps: null, alerts: [], headline: null });
     try {
-      const r = await api<{ run: { steps: { step: string; detail: string }[]; headline: string }; alerts: LiveAlert[] }>(
+      const r = await api<{ run: { steps: { step: string; detail: string }[]; headline: string }; alerts: LiveAlert[]; notified: boolean }>(
         "/api/ingest", { method: "POST", body: JSON.stringify({ source: "demo", lote }) });
-      setLive({ label, steps: r.run.steps, alerts: r.alerts, headline: r.run.headline });
+      setLive({ label, steps: r.run.steps, alerts: r.alerts, headline: r.run.headline, notified: r.notified });
       // El panel se actualiza cuando termina la animación (≈ 420 ms por paso).
       setTimeout(() => { refresh().catch(() => undefined); }, r.run.steps.length * 420 + 150);
     } catch (e) {
@@ -149,13 +150,14 @@ export function Dashboard() {
             {NAV.map((n) => (
               <button
                 key={n.key}
-                onClick={() => setView(n.key)}
+                onClick={() => { if (view === "whatsapp") setSeenMsgs(state.messages.length); setView(n.key); if (n.key === "whatsapp") setSeenMsgs(state.messages.length); }}
                 aria-current={view === n.key ? "page" : undefined}
                 className={`group relative flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${view === n.key ? "text-accent" : "text-muted hover:text-ink"}`}
               >
                 <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${view === n.key ? "bg-accent-soft" : "group-hover:bg-stone-100"}`}>{n.icon}</span>
                 {n.label}
                 {n.key === "inicio" && open.length > 0 && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-red ring-2 ring-surface" aria-label={`${open.length} alertas abiertas`} />}
+                {n.key === "whatsapp" && view !== "whatsapp" && state.messages.length > seenMsgs && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-[#25d366] ring-2 ring-surface" aria-label="Mensajes nuevos de WhatsApp" />}
               </button>
             ))}
           </nav>
@@ -192,12 +194,19 @@ export function Dashboard() {
       </div>
 
       {empty && live ? (
-        <div className="mx-auto max-w-xl"><LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} /></div>
+        <div className="mx-auto max-w-xl"><LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} onOpenWhatsApp={() => setView("whatsapp")} /></div>
       ) : empty ? (
         <EmptyState busy={busy === "lote-1"} onStart={() => ingest("lote-1")} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {view === "correo" && cat !== "todos" ? (
+          {view === "whatsapp" ? (
+            <WhatsAppView
+              state={state}
+              busy={busy === "wa"}
+              onSend={(body) => act("wa", () => api("/api/whatsapp/simulate", { method: "POST", body: JSON.stringify({ body }) }))}
+              onDigest={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")}
+            />
+          ) : view === "correo" && cat !== "todos" ? (
             <div className="min-w-0 space-y-5">
               <MailTabs categories={state.categories} cat={cat} onPick={setCat} />
               <CategoryView
@@ -212,7 +221,7 @@ export function Dashboard() {
             {view === "correo" && <MailTabs categories={state.categories} cat={cat} onPick={setCat} />}
 
             {/* Bitácora del agente (animada mientras trabaja) */}
-            {view === "inicio" && live && <LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} />}
+            {view === "inicio" && live && <LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} onOpenWhatsApp={() => setView("whatsapp")} />}
             {view === "inicio" && !live && state.lastRun && (
               <Card className="py-4">
                 <div className="flex items-start gap-3">
@@ -519,12 +528,6 @@ export function Dashboard() {
 
           {/* Columna derecha */}
           <aside className="min-w-0 space-y-5">
-            <Phone
-              messages={state.messages}
-              real={state.mode.whatsapp}
-              busy={busy === "wa"}
-              onSend={(body) => act("wa", () => api("/api/whatsapp/simulate", { method: "POST", body: JSON.stringify({ body }) }))}
-            />
             <Card>
               <SectionTitle aside={<Button variant="ghost" disabled={!!busy} onClick={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")}>Enviar por WhatsApp</Button>}>Tu semana</SectionTitle>
               {state.week.length === 0 ? <p className="text-sm text-muted">No hay nada urgente. ✅</p> : (
@@ -726,6 +729,7 @@ const Svg = ({ d }: { d: string }) => (
 );
 const IconHome = () => <Svg d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10" />;
 const IconMail = () => <Svg d="M3 6h18v12H3zM3 7l9 6 9-6" />;
+const IconChat = () => <Svg d="M4 20l1.4-4A8 8 0 1 1 8 18.6zM9 10h.01M12 10h.01M15 10h.01" />;
 const IconChart = () => <Svg d="M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z" />;
 const IconWallet = () => <Svg d="M3 7h15a3 3 0 0 1 3 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-3v3M16 13h2" />;
 const IconHand = () => <Svg d="M4 14h3l4 3h5a2 2 0 0 0 0-4h-4M7 14V9l5-4 5 4M2 20h20" />;
@@ -737,6 +741,7 @@ const NAV: { key: View; label: string; icon: ReactNode }[] = [
   { key: "inicio", label: "Inicio", icon: <IconHome /> },
   { key: "correo", label: "Correo", icon: <IconMail /> },
   { key: "plata", label: "Plata", icon: <IconChart /> },
+  { key: "whatsapp", label: "WhatsApp", icon: <IconChat /> },
 ];
 
 function MailTabs({ categories, cat, onPick }: { categories: PulsoState["categories"]; cat: string; onPick: (c: string) => void }) {
@@ -758,6 +763,45 @@ function MailTabs({ categories, cat, onPick }: { categories: PulsoState["categor
             <span className={`tabular text-xs ${cat === t.key ? "text-white/75" : "text-muted"}`}>{t.count}</span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WhatsApp en su propio apartado: el celular del dueño y cómo se usa.
+function WhatsAppView({ state, busy, onSend, onDigest }: { state: PulsoState; busy: boolean; onSend: (body: string) => void; onDigest: () => void }) {
+  const sent = state.messages.filter((m) => m.direction === "saliente" && m.kind === "alerta").length;
+  const replies = state.messages.filter((m) => m.direction === "entrante").length;
+  return (
+    <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+      <div className="min-w-0">
+        <Phone messages={state.messages} real={state.mode.whatsapp} busy={busy} onSend={onSend} />
+      </div>
+      <div className="min-w-0 space-y-5">
+        <Card>
+          <SectionTitle>Así te avisa Pulso</SectionTitle>
+          <p className="text-sm">Cuando aparece algo que no cuadra (confianza alta o media), Pulso te escribe por WhatsApp con un resumen, el monto y un link. Respondés desde el celular:</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-bold text-accent">1</span><span><strong>Preparar el correo</strong> para resolverlo. Queda como borrador: nada se envía sin que lo revisés.</span></li>
+            <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-bold text-accent">2</span><span><strong>Es normal.</strong> Pulso lo aprende y no te vuelve a molestar con casos iguales (nunca con un rechazo de Hacienda).</span></li>
+            <li className="flex gap-3"><span className="flex h-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft px-1.5 text-xs font-bold text-accent">VER</span><span>Te manda el link a la evidencia.</span></li>
+            <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent" aria-hidden>?</span><span>Cualquier otra cosa es una <strong>pregunta</strong>: “¿Quién me debe?”, “¿Cuadró el datáfono ayer?”.</span></li>
+          </ul>
+        </Card>
+        <Card>
+          <SectionTitle aside={<Button variant="ghost" onClick={onDigest}>Enviar “Tu semana”</Button>}>Resumen</SectionTitle>
+          <dl className="grid grid-cols-3 gap-3 text-sm">
+            <Metric label="Avisos enviados" value={String(sent)} />
+            <Metric label="Respuestas tuyas" value={String(replies)} />
+            <Metric label="Modo" value={state.mode.whatsapp ? "Real" : "Simulado"} />
+          </dl>
+          <p className="mt-3 text-xs text-muted">
+            {state.mode.whatsapp
+              ? "Los mensajes salen por Twilio a tu WhatsApp. Sin spam: se agrupan por corrida y hay un tope diario."
+              : "Modo simulado: los mensajes se ven en este celular. Con Twilio configurado, llegan a tu WhatsApp de verdad. Sin spam: se agrupan por corrida y hay un tope diario."}
+          </p>
+        </Card>
       </div>
     </div>
   );
