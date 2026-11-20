@@ -54,7 +54,7 @@ export function parseSettlementCsv(text: string): SettlementData | null {
 }
 
 // ---------------------------------------------------------------- texto del correo (respaldo)
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 /** "₡412 300", "₡1 248 750,50" o "412.300" → número. */
 function amountAfter(label: RegExp, text: string): number | null {

@@ -124,7 +124,7 @@ export function ruleUnusualAmounts(docs: Doc[]): AlertDraft[] {
 
 // ---------------------------------------------------------------- cobro sin factura
 const simplify = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\b(s\.?a\.?|srl|ltda|cr|de|del|la|el|y)\b/g, "").replace(/[^a-z0-9]/g, "");
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\b(s\.?a\.?|srl|ltda|cr|de|del|la|el|y)\b/g, "").replace(/[^a-z0-9]/g, "");
 
 export function ruleChargeWithoutInvoice(docs: Doc[]): AlertDraft[] {
   const issuers = invoices(docs).map((d) => ({ name: simplify(d.ext.invoice!.issuerName), taxId: d.ext.invoice!.issuerTaxId }));

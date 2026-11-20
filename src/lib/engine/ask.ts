@@ -23,7 +23,7 @@ export const SUGGESTED_QUESTIONS = [
   "¿Qué no cuadra?",
 ];
 
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[¿?¡!.,]/g, " ").replace(/\s+/g, " ").trim();
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?¡!.,]/g, " ").replace(/\s+/g, " ").trim();
 const addDays = (iso: string, n: number) => new Date(Date.parse(iso + "T00:00:00Z") + n * 86_400_000).toISOString().slice(0, 10);
 const src = (d: Doc, label?: string): AskSource => ({ emailId: d.email.id, label: label ?? `${d.ext.counterparty ?? "Correo"} · ${fecha(d.email.receivedAt)}`, counterparty: d.ext.counterparty });
 

@@ -24,7 +24,7 @@ export interface ExtractContext {
 }
 
 // ------------------------------------------------------------------ utilidades
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 export function senderName(sender: string): string {
   const m = sender.match(/^\s*"?([^"<]+?)"?\s*<.+>\s*$/);
