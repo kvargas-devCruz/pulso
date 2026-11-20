@@ -30,6 +30,9 @@
 
 ## 2. Cómo correrlo
 
+**App publicada:** https://pulso-mu-nine.vercel.app (datos en Supabase). Tocá **"Probar con la bandeja de prueba"**.
+> El prototipo no tiene login: cualquiera con el link puede cargar la bandeja o tocar **Reiniciar**. Todos los datos son ficticios.
+
 ### Requisitos
 - Node.js 20 o superior (probado con Node 22).
 - Nada más para la demo. Las llaves de Claude, Supabase y Twilio son opcionales (ver abajo).
@@ -64,13 +67,14 @@ Copiá `.env.example` a `.env.local` y completá lo que quieras usar:
 | `APP_URL` | Links dentro de los mensajes de WhatsApp | `http://localhost:3000` |
 | `PULSO_TODAY` | Fijar el "hoy" (la demo usa 2026-11-20) | Fecha actual de Costa Rica |
 
-**Supabase:** en el SQL Editor de tu proyecto, ejecutá `supabase/migrations/0001_init.sql`.
+**Supabase:** en el SQL Editor de tu proyecto (**New → Snippet**, vacío) pegá y ejecutá `supabase/migrations/0001_init.sql`. Incluye los `grant` que los proyectos nuevos de Supabase ya no dan solos a la Data API. Para comprobar que el Store de Supabase funciona: `npm run eval:supabase` (usa `.env.local` y una empresa de eval aparte).
 **WhatsApp (Twilio Sandbox):** uní tu celular al sandbox y configurá el webhook "When a message comes in" a `https://TU-APP/api/whatsapp/webhook` (POST).
 
 ### Pruebas
 ```bash
 npm test         # pruebas unitarias del lector de XML, las heurísticas y las reglas
 npm run eval     # procesa la bandeja de prueba de punta a punta y la compara con esperado.json
+npm run eval:supabase  # lo mismo, guardando en Supabase real (necesita .env.local)
 npm run build    # compilación de producción
 ```
 

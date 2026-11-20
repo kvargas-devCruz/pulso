@@ -25,6 +25,11 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 
 **Qué decidí yo y qué hizo el agente:** [ ] completar
 
+**Deploy (viernes en la tarde):**
+- Supabase real: la migración se aplicó desde el SQL Editor. Dos ajustes: el editor no acepta bloques `DO $$` (las políticas RLS quedaron escritas una por una) y los proyectos nuevos de Supabase no dan permisos a la Data API (se agregaron `grant` para `service_role` y `authenticated`).
+- `npm run eval:supabase`: el mismo eval contra Postgres real → **8/8 alertas · 0 falsos positivos · extracción 100 %**, igual que con el archivo local. `SupabaseStore` funcionó sin cambios de lógica.
+- Producción en Vercel: https://pulso-mu-nine.vercel.app. Flujo principal probado dos veces seguidas contra producción (lote 1 → enseñar → lote 2 → posible duplicado → WhatsApp → "1" → acción aprobada vía whatsapp en Supabase) y revisión visual en escritorio y celular.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:
