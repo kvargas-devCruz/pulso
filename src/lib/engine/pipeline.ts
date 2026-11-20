@@ -351,7 +351,9 @@ export async function handleReply(store: Store, text: string): Promise<string> {
       const a = await ask(store, text, todayCR());
       reply = a.intent === "no_entendi"
         ? `${a.answer}\n\nO respondé *1* para preparar el correo, *2* si es normal, o *VER* para el detalle.`
-        : `${a.answer}${a.sources.length ? `\n\n📎 ${plural(a.sources.length, "correo de respaldo", "correos de respaldo")} en el panel: ${appUrl()}` : ""}`;
+        : a.intent === "norma"
+          ? `📚 *${a.title}*\n\n${a.answer}\n\nFuente: ${a.links?.[0]?.label ?? ""}\n${a.links?.[0]?.url ?? ""}\n\nℹ️ ${a.disclaimer}`
+          : `${a.answer}${a.sources.length ? `\n\n📎 ${plural(a.sources.length, "correo de respaldo", "correos de respaldo")} en el panel: ${appUrl()}` : ""}`;
     }
   } catch (err) {
     reply = `⚠️ ${err instanceof Error ? err.message : "No pude hacerlo."}`;

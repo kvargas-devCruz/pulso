@@ -42,6 +42,7 @@ src/
       status.ts               # semáforo, próximos 7 días, Tu semana
       explain.ts              # explicaciones, borradores y texto de WhatsApp
       reminder.ts             # "acordame…": fecha, hora y tarea con código; la llamada sale cuando vence
+      normas.ts               # chatbot de normas: base escrita a mano y verificada, con fuente; nunca generada
       ask.ts                  # "Preguntale a Pulso": la pregunta elige qué calcular; los números salen de código
     store/                    # Store: SupabaseStore (producción) | LocalStore (demo)
     notify/whatsapp.ts        # Twilio + validación de firma

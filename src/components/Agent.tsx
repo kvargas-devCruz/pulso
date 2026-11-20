@@ -100,7 +100,7 @@ export function LiveRun({ run, onClose, onOpenAlert, onOpenWhatsApp }: { run: Li
 }
 
 // ---------------------------------------------------------------- Preguntale a Pulso
-interface AskResult { intent: string; answer: string; sources: { emailId: string; label: string; counterparty: string | null }[] }
+interface AskResult { intent: string; answer: string; title?: string; sources: { emailId: string; label: string; counterparty: string | null }[]; links?: { label: string; url: string }[]; disclaimer?: string }
 
 export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; onOpenEmail: (id: string) => void }) {
   const [q, setQ] = useState("");
@@ -135,7 +135,7 @@ export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; 
         </span>
         <div>
           <h2 className="text-sm font-semibold">Preguntale a Pulso</h2>
-          <p className="text-xs text-muted">Te respondo con lo que llegó a tu correo y te muestro de dónde lo saqué.</p>
+          <p className="text-xs text-muted">Te respondo con lo que llegó a tu correo y con las normas laborales y fiscales básicas, y te muestro de dónde lo saqué.</p>
         </div>
       </div>
 
@@ -170,7 +170,17 @@ export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; 
         <div className="mt-4 space-y-2" aria-live="polite">
           <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-accent px-3 py-2 text-sm text-white">{result.q}</div>
           <div className="w-fit max-w-[95%] rounded-2xl rounded-bl-md bg-bg px-3 py-2 text-sm">
+            {result.r.title && <p className="mb-1 font-semibold">📚 {result.r.title}</p>}
             <p className="whitespace-pre-line">{result.r.answer}</p>
+            {result.r.links && result.r.links.length > 0 && (
+              <div className="mt-2 space-y-1 border-t border-line pt-2 text-xs">
+                <span className="text-muted">Fuente:</span>
+                {result.r.links.map((l) => (
+                  <a key={l.url + l.label} href={l.url} target="_blank" rel="noopener noreferrer" className="block text-accent underline-offset-2 hover:underline">{l.label} ↗</a>
+                ))}
+                {result.r.disclaimer && <p className="pt-1 text-[11px] text-muted">ℹ️ {result.r.disclaimer}</p>}
+              </div>
+            )}
             {result.r.sources.length > 0 && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-line pt-2">
                 <span className="text-xs text-muted">Fuente:</span>

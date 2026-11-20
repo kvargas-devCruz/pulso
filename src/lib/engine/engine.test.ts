@@ -7,6 +7,7 @@ import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleSettlementMi
 import { parseSettlementCsv, parseSettlementText } from "./settlement";
 import { parseReservationIcs, parseReservationText } from "./reservation";
 import { parseReminder, formatDue } from "./reminder";
+import { findNorma, NORMAS } from "./normas";
 import { createReminder, fireDueReminders, answerCall } from "./pipeline";
 import { companyCharts } from "./status";
 import { answerQuestion } from "./ask";
@@ -293,4 +294,22 @@ describe("recordatorios y llamada", () => {
     expect((await store.listMessages()).find((m) => m.id === call.id)!.status).toBe("atendida");
     expect((await store.listReminders())[0].status).toBe("hecho");
   }, 30000);
+});
+
+describe("chatbot de normas", () => {
+  it("encuentra el tema correcto y no inventa lo que no está", () => {
+    expect(findNorma("¿Cómo se calcula el aguinaldo?")?.id).toBe("aguinaldo");
+    expect(findNorma("¿Cuánto se paga un feriado trabajado?")?.id).toBe("feriados");
+    expect(findNorma("si despido a alguien con 3 años, cuánto pago?")?.id).toBe("cesantia");
+    expect(findNorma("cómo se pagan las horas extra")?.id).toBe("horas_extra");
+    expect(findNorma("el 10% de servicio es para el dueño?")?.id).toBe("servicio");
+    expect(findNorma("¿cuál es el salario mínimo?")).toBeNull();
+    expect(findNorma("¿Quién me debe?")).toBeNull();
+  });
+  it("cada respuesta trae al menos una fuente con link", () => {
+    for (const n of NORMAS) {
+      expect(n.sources.length).toBeGreaterThan(0);
+      for (const src of n.sources) expect(src.url).toMatch(/^https:\/\//);
+    }
+  });
 });

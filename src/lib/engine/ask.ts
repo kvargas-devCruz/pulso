@@ -6,12 +6,17 @@ import type { Doc } from "./rules";
 import { alertTitle } from "./explain";
 import { payState, payableDocs, upcoming, upcomingReservations } from "./status";
 import { colones, daysBetween, fecha, plural } from "../format";
+import { NORMAS_DISCLAIMER, findNorma, type NormaSource } from "./normas";
 
 export interface AskSource { emailId: string; label: string; counterparty: string | null }
 export interface AskAnswer {
-  intent: "cuadre" | "hacienda" | "ventas" | "me_deben" | "proveedor" | "debo" | "riesgos" | "reservas" | "no_entendi";
+  intent: "cuadre" | "hacienda" | "ventas" | "me_deben" | "proveedor" | "debo" | "riesgos" | "reservas" | "norma" | "no_entendi";
   answer: string;
   sources: AskSource[];
+  /** Normas: de dónde sale la respuesta (ley y artículo) y el aviso de "no es asesoría legal". */
+  links?: NormaSource[];
+  disclaimer?: string;
+  title?: string;
 }
 
 export const SUGGESTED_QUESTIONS = [
@@ -22,6 +27,8 @@ export const SUGGESTED_QUESTIONS = [
   "¿Cuánto vendí esta semana?",
   "¿Hay facturas rechazadas por Hacienda?",
   "¿Qué no cuadra?",
+  "¿Cómo se calcula el aguinaldo?",
+  "¿Cuánto se paga un feriado trabajado?",
 ];
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?¡!.,]/g, " ").replace(/\s+/g, " ").trim();
@@ -64,6 +71,10 @@ export function answerQuestion(question: string, docs: Doc[], alerts: Alert[], t
   const q = norm(question);
   const open = alerts.filter((a) => a.status === "abierta");
   const byId = new Map(docs.map((d) => [d.email.id, d]));
+
+  // ------------------------------------------------ normas (Código de Trabajo, aguinaldo, 10 %, IVA)
+  const norma = findNorma(question);
+  if (norma) return { intent: "norma", title: norma.title, answer: norma.answer, sources: [], links: norma.sources, disclaimer: NORMAS_DISCLAIMER };
 
   // ------------------------------------------------ reservas
   if (/reserv|\bmesas?\b|cuantas personas|cuanta gente|comensales/.test(q)) {
@@ -193,7 +204,7 @@ export function answerQuestion(question: string, docs: Doc[], alerts: Alert[], t
 
   return {
     intent: "no_entendi",
-    answer: `Todavía no sé responder eso. Probá con: ${SUGGESTED_QUESTIONS.slice(0, 4).map((x) => `"${x}"`).join(", ")}.`,
+    answer: `Todavía no sé responder eso. Probá con: ${SUGGESTED_QUESTIONS.slice(0, 4).map((x) => `"${x}"`).join(", ")}. También sé de aguinaldo, vacaciones, jornadas, horas extra, feriados, preaviso, cesantía, el 10 % de servicio e IVA.`,
     sources: [],
   };
 }

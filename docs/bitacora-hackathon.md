@@ -59,6 +59,11 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 - Honestidad: WhatsApp no permite leer el WhatsApp personal del dueño; en producción se conecta el número Business del negocio (API de WhatsApp Business por Twilio o Meta) o el dueño reenvía mensajes a Pulso.
 - `npm run eval`: **10/10 · 0 falsos positivos · extracción 100 % (61 mensajes)** · 25 pruebas.
 
+**Chatbot de normas (viernes en la noche):**
+- 10 temas (aguinaldo, vacaciones, jornadas, horas extra, feriados, día libre, preaviso, cesantía, 10 % de servicio, IVA) escritos a mano a partir del texto de la norma: los artículos 28, 29, 136, 138, 139, 140, 148, 149, 152 y 153 del Código de Trabajo se leyeron del texto vigente en SINALEVI (incluye las reformas de feriados de 2021 y 2024 y la tabla de cesantía de la Ley 7983); aguinaldo de la Ley 2412 y la campaña 2026 del MTSS.
+- Lo que no se pudo confirmar en fuente oficial no se incluyó (p. ej., si el 10 % se calcula con o sin IVA tras la Ley 9116, plazos de declaración del IVA, salario mínimo). Cada respuesta cita su fuente y aclara que no es asesoría legal.
+- Búsqueda con código en `normas.ts`; funciona en "Preguntale a Pulso" y por WhatsApp. `npm test`: 27 pruebas.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:
