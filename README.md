@@ -26,6 +26,7 @@
 - **Borradores con aprobación:** correo al proveedor, cobro al cliente o recordatorio, listos para copiar o abrir en tu correo.
 - **Tu semana**, lo que te deben, tu correo ordenado por categoría y la **bitácora** de lo que hizo el agente, que se ve **en vivo, paso a paso**, cada vez que llega correo.
 - **Próximas reservas** (restaurantes): Pulso lee las reservas que llegan por correo (de la plataforma de reservas, con su `.ics`, y de clientes que escriben directo), las agrupa por día con personas, notas y anticipos, y marca las canceladas y las que faltan confirmar.
+- **También lee WhatsApp:** los mensajes que proveedores y clientes le mandan al WhatsApp Business del restaurante pasan por el mismo motor que el correo (en la demo, el pescador que cobra ₡96 000 por WhatsApp sin factura dispara "cobro sin factura"). Pulso no lee el WhatsApp personal del dueño: WhatsApp no lo permite; se conecta el número Business del negocio.
 - **Recordatorios con llamada:** por WhatsApp le decís "acordame el viernes a las 9 que debo pagar la CCSS". Pulso lo relaciona con lo que llegó al correo (₡1 248 750, vence el 26/11), te avisa si el recordatorio queda después del vencimiento y, a esa hora, **te llama** (en la demo, la llamada suena en el celular del panel y te lee el recordatorio en voz alta).
 - **Preguntale a Pulso** (en el panel o por WhatsApp): "¿Cuánto debo esta semana?", "¿Cuadró el datáfono ayer?", "¿Cuánto le debo a Cementos?". La respuesta se calcula con código y muestra los correos de donde salió.
 
@@ -84,7 +85,7 @@ npm run build    # compilación de producción
 Resultado actual de `npm run eval` (sin Claude):
 ```
 Extracción (lote 1): categoría, tipo, monto, vencimiento, estado y Hacienda: 100 %
-Alertas: 9/9 plantadas detectadas · 0 falsos positivos
+Alertas: 10/10 plantadas detectadas · 0 falsos positivos
 Aprendizaje: la factura de temporada del lote 2 quedó como normal_aprendido
 ```
 > Honestidad sobre esa cifra: las facturas y su estado en Hacienda se leen del XML (exacto). Para los correos sin XML, la heurística se escribió conociendo la bandeja de prueba, así que el 100 % mide que el flujo funciona, no la precisión con correos reales. Con correos reales, la extracción de texto la hace Claude (`ANTHROPIC_API_KEY`); medir eso con correos reales del restaurante es el siguiente paso.
@@ -97,7 +98,7 @@ Aprendizaje: la factura de temporada del lote 2 quedó como normal_aprendido
 
 **Flujo de trabajo:**
 1. **Criterio primero.** Antes de escribir código definí el producto en [`PRD.md`](PRD.md), las decisiones técnicas en [`docs/adr/`](docs/adr/) y las reglas para el agente en [`CLAUDE.md`](CLAUDE.md).
-2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 61 correos ficticios de un restaurante con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
+2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 64 mensajes ficticios de un restaurante (correo y WhatsApp) con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
 3. **Construcción por bloques**, cada uno verificado con build, pruebas y eval antes de seguir (ver [`docs/bitacora-hackathon.md`](docs/bitacora-hackathon.md)).
 4. **Revisión visual:** el agente abrió el panel en un navegador sin interfaz, ejecutó el flujo completo de la demo y revisó capturas de escritorio y celular (así encontró y corrigió un desborde horizontal en el celular).
 5. **Revisión humana** de cada decisión contra el PRD y los ADRs.

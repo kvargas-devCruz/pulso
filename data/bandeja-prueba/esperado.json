@@ -956,6 +956,49 @@
       }
     },
     {
+      "id": "lote-1-59",
+      "lote": "lote-1",
+      "asunto": "WhatsApp de Pescadería Don Jorge",
+      "categoria": "proveedores",
+      "tipo": "cobro",
+      "contraparte": "Pescadería Don Jorge",
+      "monto": 96000,
+      "vencimiento": null,
+      "estado": "pendiente",
+      "canal": "whatsapp",
+      "nota": "Cobro por WhatsApp sin factura electrónica: nueva alerta cobro_sin_factura."
+    },
+    {
+      "id": "lote-1-60",
+      "lote": "lote-1",
+      "asunto": "WhatsApp de Gabriela Soto",
+      "categoria": "clientes",
+      "tipo": "reserva",
+      "contraparte": "Gabriela Soto",
+      "monto": null,
+      "vencimiento": null,
+      "estado": "informativo",
+      "canal": "whatsapp",
+      "reserva": {
+        "fecha": "2026-11-21",
+        "hora": "20:00",
+        "personas": 6,
+        "estado": "por_confirmar"
+      }
+    },
+    {
+      "id": "lote-1-61",
+      "lote": "lote-1",
+      "asunto": "WhatsApp de Hotel Vista Volcán",
+      "categoria": "clientes",
+      "tipo": "pago_recibido",
+      "contraparte": "Hotel Vista Volcán",
+      "monto": 118000,
+      "vencimiento": null,
+      "estado": "pagado",
+      "canal": "whatsapp"
+    },
+    {
       "id": "lote-2-01",
       "lote": "lote-2",
       "asunto": "Factura electrónica 00100001010000001003 - Distribuidora de Carnes del Valle S.A.",
@@ -1089,6 +1132,16 @@
       "monto_en_riesgo": 560000,
       "razon": "Cobro pendiente a cliente, vencido el 04/11/2026.",
       "nota": "Es dinero POR COBRAR."
+    },
+    {
+      "tipo": "cobro_sin_factura",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-59"
+      ],
+      "monto_en_riesgo": 96000,
+      "razon": "Mensaje de WhatsApp que pide un pago sin ninguna factura electrónica de ese proveedor.",
+      "nota": "Llega por el WhatsApp Business del restaurante, no por correo."
     },
     {
       "tipo": "cierre_descuadre",

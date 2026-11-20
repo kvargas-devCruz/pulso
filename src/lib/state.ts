@@ -16,6 +16,7 @@ export async function buildState(store: Store, today: string) {
     store.listRules(), store.listActions(), store.listMessages(), store.listRuns(), store.listReminders(),
   ]);
   const docs = joinDocs(emails, exts);
+  const channelOf = new Map(emails.map((e) => [e.id, e.channel ?? "correo"]));
   const next = upcoming(docs, today);
   const sem = semaphore(alerts, next);
   const lastRun = [...runs].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null;
@@ -60,6 +61,7 @@ export async function buildState(store: Store, today: string) {
       extractedBy: d.ext.extractedBy,
       summary: d.ext.summary,
       openAlerts: openByEmail.get(d.email.id) ?? 0,
+      channel: d.email.channel ?? "correo",
     }))
     .reverse();
 
@@ -75,7 +77,7 @@ export async function buildState(store: Store, today: string) {
     lastRun,
     semaphore: sem,
     alerts: alerts
-      .map((a) => ({ ...a, title: alertTitle(a), action: actions.find((x) => x.alertId === a.id) ?? null }))
+      .map((a) => ({ ...a, title: alertTitle(a), action: actions.find((x) => x.alertId === a.id) ?? null, channel: channelOf.get(a.emailIds[0]) ?? "correo" }))
       .sort((a, b) => (a.status === b.status ? priority(b) - priority(a) : a.status === "abierta" ? -1 : 1)),
     review: toReview(docs),
     upcoming: next,
@@ -84,13 +86,13 @@ export async function buildState(store: Store, today: string) {
     categories,
     charts: companyCharts(docs, today),
     suggestions: SUGGESTED_QUESTIONS,
-    reservations: upcomingReservations(docs, today),
+    reservations: upcomingReservations(docs, today).map((r) => ({ ...r, channel: channelOf.get(r.emailId) ?? "correo" })),
     reminders: reminders.filter((r) => r.status !== "borrado").sort((a, b) => a.dueAt.localeCompare(b.dueAt)),
     ringing: [...messages].reverse().find((m) => m.kind === "llamada" && m.status === "sonando") ?? null,
     documents,
     rules,
     messages,
-    counts: { emails: emails.length, documents: docs.length, invoices: docs.filter((d) => d.ext.invoice).length },
+    counts: { whatsapp: emails.filter((e) => e.channel === "whatsapp").length, emails: emails.length, documents: docs.length, invoices: docs.filter((d) => d.ext.invoice).length },
     loaded: { lote1: emails.some((e) => e.externalId.startsWith("lote-1")), lote2: emails.some((e) => e.externalId.startsWith("lote-2")) },
   };
 }

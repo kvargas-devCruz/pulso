@@ -220,17 +220,23 @@ export function Dashboard() {
             />
           ) : view === "correo" && cat !== "todos" ? (
             <div className="min-w-0 space-y-5">
-              <MailTabs categories={state.categories} cat={cat} onPick={setCat} />
+              <MailTabs categories={state.categories} cat={cat} onPick={setCat} whatsapp={state.counts.whatsapp} />
               <CategoryView
-                category={state.categories.find((c) => c.category === cat) ?? state.categories[0]}
-                docs={state.documents.filter((d) => d.category === cat)}
+                category={cat === "whatsapp"
+                  ? {
+                      category: "whatsapp" as PulsoState["categories"][number]["category"], label: "WhatsApp", count: state.counts.whatsapp,
+                      pendingCount: state.documents.filter((d) => d.channel === "whatsapp" && (d.status === "pendiente" || d.status === "vencido") && d.amount).length,
+                      pendingTotal: state.documents.filter((d) => d.channel === "whatsapp" && (d.status === "pendiente" || d.status === "vencido")).reduce((t, d) => t + (d.amount ?? 0), 0),
+                    }
+                  : state.categories.find((c) => c.category === cat) ?? state.categories[0]}
+                docs={state.documents.filter((d) => (cat === "whatsapp" ? d.channel === "whatsapp" : d.category === cat))}
                 onOpen={setEmailId}
                 onBack={() => setCat("todos")}
               />
             </div>
           ) : (
           <div className="min-w-0 space-y-5">
-            {view === "correo" && <MailTabs categories={state.categories} cat={cat} onPick={setCat} />}
+            {view === "correo" && <MailTabs categories={state.categories} cat={cat} onPick={setCat} whatsapp={state.counts.whatsapp} />}
 
             {/* Bitácora del agente (animada mientras trabaja) */}
             {view === "inicio" && live && <LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} onOpenWhatsApp={() => setView("whatsapp")} />}
@@ -520,7 +526,7 @@ export function Dashboard() {
                   <tbody>
                     {state.documents.filter((d) => d.category !== "ruido").map((d) => (
                       <tr key={d.emailId} className="cursor-pointer border-b border-line/70 hover:bg-stone-50" onClick={() => setEmailId(d.emailId)}>
-                        <td className="px-5 py-2"><div className="flex items-center gap-2.5"><Avatar name={d.counterparty ?? d.from} size={30} /><div><div className="font-medium">{d.counterparty ?? d.from}</div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></div></div></td>
+                        <td className="px-5 py-2"><div className="flex items-center gap-2.5"><Avatar name={d.counterparty ?? d.from} size={30} /><div><div className="flex flex-wrap items-center gap-1.5 font-medium">{d.counterparty ?? d.from}<ChannelTag channel={d.channel} /></div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></div></div></td>
                         <td className="py-2">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)}` : d.summary.slice(0, 48)}</td>
                         <td className="py-2 text-right tabular">
                           {colones(d.amount)}
@@ -617,7 +623,7 @@ function AlertRow({ a, busy, onEvidence, onApprove, onDraft, onNormal, onDismiss
                 <Badge tone={confTone(a.confidence)}>confianza {a.confidence}</Badge>
                 {a.notified && <Badge tone="green">avisado por WhatsApp</Badge>}
               </div>
-              <div className="text-sm text-muted">{a.counterparty}</div>
+              <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted">{a.counterparty}<ChannelTag channel={a.channel} /></div>
             </div>
             {a.amountAtRisk ? (
               <div className="text-right">
@@ -685,12 +691,12 @@ function CategoryView({ category, docs, onOpen, onBack }: {
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <button onClick={onBack} className="mb-1 text-xs text-muted hover:text-ink hover:underline">← Todo el correo</button>
+            <button onClick={onBack} className="mb-1 text-xs text-muted hover:text-ink hover:underline">← Todos los mensajes</button>
             <h2 className="flex items-center gap-2 text-xl font-bold">
               <span className="h-3 w-3 rounded-full" style={{ background: CATEGORY_COLOR[category.category] }} aria-hidden />
               {category.label}
             </h2>
-            <p className="text-sm text-muted">{category.count} correo{category.count === 1 ? "" : "s"}{isNoise ? " que Pulso ignora (publicidad, boletines)." : "."}</p>
+            <p className="text-sm text-muted">{category.count} mensaje{category.count === 1 ? "" : "s"}{isNoise ? " que Pulso ignora (publicidad, boletines)." : "."}</p>
           </div>
           {!isNoise && (
             <dl className="grid grid-cols-3 gap-x-6 text-sm">
@@ -711,6 +717,7 @@ function CategoryView({ category, docs, onOpen, onBack }: {
                 <div className="min-w-0 flex-1 basis-56">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{d.counterparty ?? d.from}</span>
+                    <ChannelTag channel={d.channel} />
                     {d.openAlerts > 0 && <Badge tone="red">⚠ no cuadra</Badge>}
                   </div>
                   <div className="truncate text-sm text-muted">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)} · ${d.subject}` : d.subject}</div>
@@ -752,15 +759,15 @@ const IconCalendar = () => <Svg d="M4 6h16v15H4zM4 10h16M9 3v4M15 3v4" />;
 
 const NAV: { key: View; label: string; icon: ReactNode }[] = [
   { key: "inicio", label: "Inicio", icon: <IconHome /> },
-  { key: "correo", label: "Correo", icon: <IconMail /> },
+  { key: "correo", label: "Mensajes", icon: <IconMail /> },
   { key: "plata", label: "Plata", icon: <IconChart /> },
   { key: "reservas", label: "Reservas", icon: <IconCalendar /> },
   { key: "whatsapp", label: "WhatsApp", icon: <IconChat /> },
 ];
 
-function MailTabs({ categories, cat, onPick }: { categories: PulsoState["categories"]; cat: string; onPick: (c: string) => void }) {
+function MailTabs({ categories, cat, onPick, whatsapp }: { categories: PulsoState["categories"]; cat: string; onPick: (c: string) => void; whatsapp: number }) {
   const total = categories.reduce((t, c) => t + c.count, 0);
-  const tabs = [{ key: "todos", label: "Todo", count: total }, ...categories.filter((c) => c.count > 0).map((c) => ({ key: c.category as string, label: c.label, count: c.count }))];
+  const tabs = [{ key: "todos", label: "Todo", count: total }, ...(whatsapp ? [{ key: "whatsapp", label: "WhatsApp", count: whatsapp }] : []), ...categories.filter((c) => c.count > 0).map((c) => ({ key: c.category as string, label: c.label, count: c.count }))];
   return (
     <div className="no-scrollbar -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0">
       <div role="tablist" aria-label="Tipos de correo" className="card-soft flex w-max gap-1 rounded-2xl bg-surface p-1.5 sm:w-full sm:flex-wrap">
@@ -898,7 +905,7 @@ function ReservationsView({ reservations, today, onOpen }: { reservations: Reser
                       <span className="tabular w-12 shrink-0 text-lg font-bold">{r.time ?? "—"}</span>
                       <Avatar name={r.name} size={34} />
                       <div className="min-w-0 flex-1 basis-40">
-                        <div className={`font-medium ${cancelled ? "line-through" : ""}`}>{r.name}</div>
+                        <div className={`flex flex-wrap items-center gap-1.5 font-medium ${cancelled ? "line-through" : ""}`}>{r.name}<ChannelTag channel={r.channel} /></div>
                         {r.notes && <div className="text-xs text-muted">{r.notes}</div>}
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -958,5 +965,16 @@ function Reminders({ reminders, onAction }: { reminders: PulsoState["reminders"]
         </ul>
       )}
     </Card>
+  );
+}
+
+/** Etiqueta "WhatsApp" para lo que llegó por el WhatsApp Business del negocio. */
+function ChannelTag({ channel }: { channel?: string }) {
+  if (channel !== "whatsapp") return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[11px] font-semibold text-[#128c4a]" title="Llegó por WhatsApp">
+      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.4.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z" /></svg>
+      WhatsApp
+    </span>
   );
 }

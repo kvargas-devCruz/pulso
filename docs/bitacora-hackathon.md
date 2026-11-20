@@ -53,6 +53,12 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 - Límite: sin cron, la llamada sale cuando el panel está abierto. Siguiente paso: Supabase `pg_cron` + Twilio Voice.
 - `npm test`: 25 pruebas · `npm run eval`: 9/9, 0 falsos positivos.
 
+**Pulso lee WhatsApp (viernes en la noche):**
+- Los mensajes del WhatsApp Business del restaurante (simulado) entran por el mismo flujo que el correo (`channel: "whatsapp"`): el motor no necesitó cambios. Nuevo caso plantado: la pescadería cobra ₡96 000 por WhatsApp sin factura → "cobro sin factura". También una reserva y un pago de cliente por WhatsApp.
+- Etiqueta "WhatsApp" en alertas, mensajes y reservas; la sección "Correo" pasa a "Mensajes" con pestaña WhatsApp.
+- Honestidad: WhatsApp no permite leer el WhatsApp personal del dueño; en producción se conecta el número Business del negocio (API de WhatsApp Business por Twilio o Meta) o el dueño reenvía mensajes a Pulso.
+- `npm run eval`: **10/10 · 0 falsos positivos · extracción 100 % (61 mensajes)** · 25 pruebas.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:

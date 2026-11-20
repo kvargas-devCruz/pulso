@@ -16,6 +16,7 @@ export const CATEGORY_COLOR: Record<string, string> = {
   ins: "#eda100",
   bancos: "#e87ba4",
   ventas: "#008300",
+  whatsapp: "#25d366",
   clientes: "#6250d6",
   contador: "#e34948",
   ruido: "#898781",

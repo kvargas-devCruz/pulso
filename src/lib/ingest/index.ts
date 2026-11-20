@@ -17,6 +17,7 @@ interface DemoFile {
   asunto: string;
   cuerpo: string;
   adjuntos: { nombre: string; tipo: string; contenido: string | null }[];
+  canal?: "correo" | "whatsapp";
 }
 
 export const DEMO_LOTES = ["lote-1", "lote-2"] as const;
@@ -41,6 +42,7 @@ export function demoAdapter(lote: DemoLote, baseDir = path.join(/*turbopackIgnor
             body: d.cuerpo,
             receivedAt: d.fecha,
             attachments: d.adjuntos.map((a) => ({ name: a.nombre, type: a.tipo, content: a.contenido })),
+            channel: d.canal ?? "correo",
           };
         }),
       );

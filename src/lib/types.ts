@@ -17,6 +17,8 @@ export interface RawEmail {
   body: string;
   receivedAt: string; // ISO
   attachments: Attachment[];
+  /** Por dónde llegó: correo (por defecto) o el WhatsApp Business del negocio. */
+  channel?: "correo" | "whatsapp";
 }
 
 export interface EmailRecord extends RawEmail {

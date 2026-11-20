@@ -481,6 +481,39 @@ correo_simple(L1, "reserva-directa-empresa", "Datacorp CR <eventos@datacorp.test
                "vencimiento": None, "estado": "informativo",
                "reserva": {"fecha": "2026-11-26", "hora": "18:30", "personas": 20, "estado": "por_confirmar", "anticipo": 100000}})
 
+# WhatsApp Business del restaurante (simulado): proveedores y clientes también escriben por ahí.
+# Al final del lote 1 para no cambiar los IDs anteriores. Pasan por el mismo motor que el correo.
+wrng = random.Random(2511)
+
+
+def whatsapp(lote, slug, nombre, numero, d, texto, exp, hora=None):
+    return agregar(lote, slug, {
+        "canal": "whatsapp",
+        "remitente": f"{nombre} <whatsapp:{numero}>",
+        "fecha": ts(d, hora if hora is not None else wrng.randint(8, 18), wrng.randint(0, 59)),
+        "asunto": f"WhatsApp de {nombre}",
+        "cuerpo": texto,
+        "adjuntos": []}, exp)
+
+
+wa_pesca_id = whatsapp(L1, "whatsapp-pescaderia-cobro", "Pescadería Don Jorge", "+50688011111", D(11, 18),
+                       "Buenas doña Carmen 🐟 le dejé hoy 12 kg de pargo rojo fresco. Son ₡96 000. "
+                       "Favor depositar por SINPE Móvil al 8801-1111. ¡Gracias! (FICTICIO)",
+                       {"categoria": "proveedores", "tipo": "cobro", "contraparte": "Pescadería Don Jorge", "monto": 96000,
+                        "vencimiento": None, "estado": "pendiente", "canal": "whatsapp",
+                        "nota": "Cobro por WhatsApp sin factura electrónica: nueva alerta cobro_sin_factura."})
+whatsapp(L1, "whatsapp-reserva", "Gabriela Soto", "+50688022222", D(11, 19),
+         "Hola! 😊 quería reservar mesa para 6 personas el sábado 21/11/2026 a las 20:00, es para una cena de "
+         "graduación. ¿Tienen espacio? (FICTICIO)",
+         {"categoria": "clientes", "tipo": "reserva", "contraparte": "Gabriela Soto", "monto": None,
+          "vencimiento": None, "estado": "informativo", "canal": "whatsapp",
+          "reserva": {"fecha": "2026-11-21", "hora": "20:00", "personas": 6, "estado": "por_confirmar"}})
+whatsapp(L1, "whatsapp-cliente-pago", "Hotel Vista Volcán", "+50688033333", D(11, 17),
+         "Buenas, les pagamos por SINPE los ₡118 000 del almuerzo de la gerencia del jueves. "
+         "Quedamos muy contentos, ¡gracias! (FICTICIO)",
+         {"categoria": "clientes", "tipo": "pago_recibido", "contraparte": "Hotel Vista Volcán", "monto": 118000,
+          "vencimiento": None, "estado": "pagado", "canal": "whatsapp"})
+
 # ---------------------------------------------------------------- LOTE 2 (llega en vivo)
 L2 = "lote-2"
 valle_dup_id, _, _ = factura(
@@ -511,6 +544,9 @@ alerta("cobro_sin_factura", "alta", [cobro_sf_id], 310000,
 alerta("vencido", "alta", [banco_venc_id], 425000, "Cuota de préstamo vencida el 15/11/2026.")
 alerta("vencido", "alta", [cliente_pend_id], 560000,
        "Cobro pendiente a cliente, vencido el 04/11/2026.", "Es dinero POR COBRAR.")
+alerta("cobro_sin_factura", "alta", [wa_pesca_id], 96000,
+       "Mensaje de WhatsApp que pide un pago sin ninguna factura electrónica de ese proveedor.",
+       "Llega por el WhatsApp Business del restaurante, no por correo.")
 alerta("cierre_descuadre", "alta", list(cierre_ids[DIA_DESCUADRE]), FALTANTE,
        "El cierre de caja registra ₡412 300 en ventas con tarjeta el 17/11/2026, pero el datáfono cobró ₡367 300: faltan ₡45 000.",
        "Los otros 5 días cuadran.")

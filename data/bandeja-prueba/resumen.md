@@ -3,7 +3,7 @@
 Hoy en la demo: **20/11/2026**. Generada con `scripts/generar_bandeja.py` (reproducible).
 Todo es inventado. Los XML siguen de forma simplificada la factura electrónica v4.4 y el mensaje de Hacienda, sin firma digital.
 
-- Lote 1 (ya en el buzón): **58 correos**
+- Lote 1 (ya en el buzón): **61 correos**
 - Lote 2 (llegan en vivo durante la demo): **3 correos**
 
 ## Correos y lo que se debe extraer
@@ -68,6 +68,9 @@ Todo es inventado. Los XML siguen de forma simplificada la factura electrónica 
 | lote-1-56 | Reserva cancelada · 22/11/2026 20:00 · 4 personas | clientes | reserva | — | — | informativo |
 | lote-1-57 | Reserva para el domingo | clientes | reserva | — | — | informativo |
 | lote-1-58 | Cena de fin de año: reserva para 20 personas | clientes | reserva | ₡100 000 | — | informativo |
+| lote-1-59 | WhatsApp de Pescadería Don Jorge | proveedores | cobro | ₡96 000 | — | pendiente |
+| lote-1-60 | WhatsApp de Gabriela Soto | clientes | reserva | — | — | informativo |
+| lote-1-61 | WhatsApp de Hotel Vista Volcán | clientes | pago_recibido | ₡118 000 | — | pagado |
 | lote-2-01 | Factura electrónica 00100001010000001003 - Distribuidora de  | proveedores | factura | ₡184 190 | 2026-12-05 | aceptado |
 | lote-2-02 | Factura electrónica 00100001010000001689 - Verdulería La Hue | proveedores | factura | ₡440 700 | 2026-12-20 | aceptado |
 | lote-2-03 | Nueva reserva · 20/11/2026 20:00 · 10 personas | clientes | reserva | — | — | informativo |
@@ -84,6 +87,7 @@ Todo es inventado. Los XML siguen de forma simplificada la factura electrónica 
 | cobro_sin_factura | alta | lote-1-31 | ₡310 000 | Correo que pide un pago sin ninguna factura electrónica de ese emisor. |
 | vencido | alta | lote-1-29 | ₡425 000 | Cuota de préstamo vencida el 15/11/2026. |
 | vencido | alta | lote-1-33 | ₡560 000 | Cobro pendiente a cliente, vencido el 04/11/2026. *Es dinero POR COBRAR.* |
+| cobro_sin_factura | alta | lote-1-59 | ₡96 000 | Mensaje de WhatsApp que pide un pago sin ninguna factura electrónica de ese proveedor. *Llega por el WhatsApp Business del restaurante, no por correo.* |
 | cierre_descuadre | alta | lote-1-43, lote-1-44 | ₡45 000 | El cierre de caja registra ₡412 300 en ventas con tarjeta el 17/11/2026, pero el datáfono cobró ₡367 300: faltan ₡45 000. *Los otros 5 días cuadran.* |
 
 ## Revisar (confianza baja, no es alerta)

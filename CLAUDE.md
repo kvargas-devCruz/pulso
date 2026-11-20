@@ -7,7 +7,7 @@ Pulso es un agente que vigila el correo de una pyme costarricense: extrae factur
 
 - Requerimientos: `PRD.md`
 - Decisiones técnicas: `docs/adr/`
-- Datos de prueba: `data/bandeja-prueba/lote-1/` (58 correos de un restaurante ficticio ya en el buzón: facturas, cierres del datáfono y de caja, y 10 reservas) y `lote-2/` (3 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
+- Datos de prueba: `data/bandeja-prueba/lote-1/` (61 mensajes de un restaurante ficticio ya en el buzón: facturas, cierres del datáfono y de caja, 10 reservas y 3 mensajes de WhatsApp) y `lote-2/` (3 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
 - Respuesta esperada: `data/bandeja-prueba/esperado.json` (para `npm run eval`) y `resumen.md` (legible). "Hoy" en la demo es el 20/11/2026.
 - Esquema de la base de datos: `supabase/migrations/0001_init.sql`, `0002_cierres.sql` y `0003_recordatorios.sql`
 - Orden de trabajo y prompts por bloque: `docs/PLAYBOOK.md`
@@ -76,7 +76,7 @@ docs/                         # adr/, PLAYBOOK.md, bitacora-hackathon.md
 
 ## Pruebas
 - `npm test`: pruebas unitarias (`src/lib/engine/engine.test.ts`).
-- `npm run eval`: procesa `data/bandeja-prueba/` de punta a punta y compara contra `esperado.json` (extracción, alertas, semáforo, aprendizaje). Correrlo después de cambiar el motor o los prompts. Debe quedar 9/9 alertas y 0 falsos positivos.
+- `npm run eval`: procesa `data/bandeja-prueba/` de punta a punta y compara contra `esperado.json` (extracción, alertas, semáforo, aprendizaje). Correrlo después de cambiar el motor o los prompts. Debe quedar 10/10 alertas y 0 falsos positivos.
 - Antes de decir "listo": `npm run build`, `npm test` y `npm run eval`.
 
 ## Prioridad cuando haya que elegir
