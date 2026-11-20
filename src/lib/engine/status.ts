@@ -114,3 +114,64 @@ export function yourWeek(alerts: Alert[], next: Upcoming[]): WeekItem[] {
   }
   return items.sort((a, b) => b.priority - a.priority);
 }
+
+// ---------------------------------------------------------------------------
+// Gráficos del estado de la empresa. Solo suma montos que ya vienen del XML o de
+// la extracción; no estima nada. Las facturas duplicadas (mismo emisor + consecutivo)
+// se cuentan una vez para no inflar lo que debés.
+
+export type PayState = "pagado" | "pendiente" | "vencido";
+export interface Slice<K extends string = string> { key: K; label: string; amount: number; count: number }
+export interface CompanyCharts {
+  debtByCategory: Slice<Category | "otros">[];
+  payments: Slice<PayState>[];
+  hacienda: Slice<"aceptado" | "rechazado" | "sin_respuesta">[];
+}
+
+const NOT_PAYABLE = new Set(["cobro_pendiente", "pago_recibido", "ruido"]);
+
+function payState(d: Doc, today: string): PayState {
+  if (d.ext.status === "pagado") return "pagado";
+  if (d.ext.status === "vencido" || (d.ext.dueDate !== null && d.ext.dueDate < today)) return "vencido";
+  return "pendiente";
+}
+
+export function companyCharts(docs: Doc[], today: string, maxSlices = 5): CompanyCharts {
+  // Lo que la empresa paga: con monto, ni ruido, ni clientes, ni avisos informativos.
+  const unique = new Map<string, Doc>();
+  for (const d of docs) {
+    if (d.ext.amount === null || d.ext.amount <= 0) continue;
+    if (d.ext.category === "ruido" || d.ext.category === "clientes" || NOT_PAYABLE.has(d.ext.kind) || d.ext.status === "informativo") continue;
+    const k = d.ext.invoice ? `${d.ext.invoice.issuerTaxId}:${d.ext.invoice.docNumber}` : d.email.id;
+    if (!unique.has(k)) unique.set(k, d);
+  }
+  const payables = [...unique.values()];
+
+  const payLabels: Record<PayState, string> = { pagado: "Pagado", pendiente: "Por pagar", vencido: "Vencido" };
+  const payments = (["vencido", "pendiente", "pagado"] as PayState[]).map((key) => {
+    const items = payables.filter((d) => payState(d, today) === key);
+    return { key, label: payLabels[key], amount: items.reduce((s, d) => s + d.ext.amount!, 0), count: items.length };
+  }).filter((s) => s.count > 0);
+
+  const owed = new Map<Category, Slice<Category>>();
+  for (const d of payables.filter((x) => payState(x, today) !== "pagado")) {
+    const c = d.ext.category;
+    const s = owed.get(c) ?? { key: c, label: categoryLabel(c), amount: 0, count: 0 };
+    s.amount += d.ext.amount!;
+    s.count++;
+    owed.set(c, s);
+  }
+  const sorted = [...owed.values()].sort((a, b) => b.amount - a.amount);
+  const debtByCategory: Slice<Category | "otros">[] = sorted.slice(0, maxSlices);
+  const rest = sorted.slice(maxSlices);
+  if (rest.length) debtByCategory.push({ key: "otros", label: "Otros", amount: rest.reduce((s, x) => s + x.amount, 0), count: rest.reduce((s, x) => s + x.count, 0) });
+
+  const hLabels = { aceptado: "Aceptadas", rechazado: "Rechazadas", sin_respuesta: "Sin respuesta" } as const;
+  const invoices = docs.filter((d) => d.ext.invoice);
+  const hacienda = (["aceptado", "rechazado", "sin_respuesta"] as const).map((key) => {
+    const items = invoices.filter((d) => (d.ext.haciendaStatus ?? "sin_respuesta") === key);
+    return { key, label: hLabels[key], amount: items.reduce((s, d) => s + (d.ext.amount ?? 0), 0), count: items.length };
+  }).filter((s) => s.count > 0);
+
+  return { debtByCategory, payments, hacienda };
+}

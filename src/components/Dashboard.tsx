@@ -4,8 +4,10 @@ import type { PulsoState } from "@/lib/state";
 import { Badge, Button, Card, PulseIcon, SectionTitle, colones, fecha, type Tone } from "./ui";
 import { EvidenceModal, EmailModal, DraftModal } from "./Modals";
 import { Phone } from "./Phone";
+import { CATEGORY_COLOR, Donut, STATUS_COLOR, colonesShort } from "./Charts";
 
 type AlertView = PulsoState["alerts"][number];
+type DocView = PulsoState["documents"][number];
 
 const LIGHT = {
   rojo: { dot: "bg-red", soft: "bg-red-soft", text: "text-red", label: "Rojo" },
@@ -33,6 +35,7 @@ export function Dashboard() {
   const [emailId, setEmailId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AlertView | null>(null);
   const [showLog, setShowLog] = useState(false);
+  const [tab, setTab] = useState<string>("resumen");
 
   const refresh = useCallback(async () => {
     const s = await api<PulsoState>("/api/state");
@@ -135,10 +138,38 @@ export function Dashboard() {
         <Badge tone="gray">Gmail: solo lectura + borradores · nunca envía</Badge>
       </div>
 
+      {!empty && (
+        <nav aria-label="Apartados" className="-mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div role="tablist" className="flex w-max gap-1 rounded-xl border border-line bg-surface p-1">
+            {[{ key: "resumen", label: "Resumen", count: null as number | null }, ...state.categories.filter((c) => c.count > 0).map((c) => ({ key: c.category as string, label: c.label, count: c.count }))].map((t) => (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === t.key ? "bg-ink text-white" : "text-muted hover:bg-stone-100 hover:text-ink"}`}
+              >
+                {t.key !== "resumen" && <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLOR[t.key] }} aria-hidden />}
+                {t.label}
+                {t.count !== null && <span className={`tabular text-xs ${tab === t.key ? "text-white/70" : "text-muted"}`}>{t.count}</span>}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+
       {empty ? (
         <EmptyState busy={busy === "lote-1"} onStart={() => ingest("lote-1")} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          {tab !== "resumen" ? (
+            <CategoryView
+              category={state.categories.find((c) => c.category === tab) ?? state.categories[0]}
+              docs={state.documents.filter((d) => d.category === tab)}
+              onOpen={setEmailId}
+              onBack={() => setTab("resumen")}
+            />
+          ) : (
           <div className="min-w-0 space-y-5">
             {/* Bitácora del agente */}
             {state.lastRun && (
@@ -178,6 +209,38 @@ export function Dashboard() {
                   <Metric label="Vence en 7 días" value={String(state.semaphore.upcomingCount)} />
                   <Metric label="Dinero en riesgo" value={colones(state.semaphore.moneyAtRisk)} />
                 </dl>
+              </div>
+            </Card>
+
+            {/* Gráficos del estado */}
+            <Card>
+              <SectionTitle aside={<span className="text-xs text-muted">montos leídos del XML y del correo</span>}>Cómo está tu plata</SectionTitle>
+              <div className="grid gap-6 sm:grid-cols-3">
+                <Donut
+                  title="Lo que debés, por tipo"
+                  slices={state.charts.debtByCategory}
+                  colors={CATEGORY_COLOR}
+                  measure="amount"
+                  center={colonesShort(state.charts.debtByCategory.reduce((t, s) => t + s.amount, 0))}
+                  centerLabel="por pagar"
+                  empty="No debés nada, según tu correo. ✅"
+                />
+                <Donut
+                  title="Estado de tus pagos"
+                  slices={state.charts.payments}
+                  colors={STATUS_COLOR}
+                  measure="amount"
+                  center={`${state.charts.payments.reduce((t, s) => t + s.count, 0)}`}
+                  centerLabel="cuentas"
+                />
+                <Donut
+                  title="Tus facturas en Hacienda"
+                  slices={state.charts.hacienda}
+                  colors={STATUS_COLOR}
+                  measure="count"
+                  center={`${state.charts.hacienda.reduce((t, s) => t + s.count, 0)}`}
+                  centerLabel="facturas"
+                />
               </div>
             </Card>
 
@@ -269,14 +332,14 @@ export function Dashboard() {
               <SectionTitle>Tu correo, ordenado</SectionTitle>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {state.categories.filter((c) => c.count > 0).map((c) => (
-                  <div key={c.category} className="rounded-xl border border-line p-3">
-                    <div className="text-sm font-medium">{c.label}</div>
+                  <button key={c.category} type="button" onClick={() => setTab(c.category)} className="rounded-xl border border-line p-3 text-left transition-colors hover:border-ink/30 hover:bg-stone-50">
+                    <div className="flex items-center gap-1.5 text-sm font-medium"><span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLOR[c.category] }} aria-hidden />{c.label}</div>
                     <div className="text-xs text-muted">{c.count} correo{c.count === 1 ? "" : "s"}</div>
                     {c.category !== "ruido" && (
                       <div className="mt-1 text-sm tabular">{c.pendingCount ? <>{colones(c.pendingTotal)} <span className="text-xs text-muted">pendiente</span></> : <span className="text-xs text-green">al día</span>}</div>
                     )}
                     {c.category === "ruido" && <div className="mt-1 text-xs text-muted">ignorado</div>}
-                  </div>
+                  </button>
                 ))}
               </div>
             </Card>
@@ -297,7 +360,7 @@ export function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {state.documents.map((d) => (
+                    {state.documents.filter((d) => d.category !== "ruido").map((d) => (
                       <tr key={d.emailId} className="cursor-pointer border-b border-line/70 hover:bg-stone-50" onClick={() => setEmailId(d.emailId)}>
                         <td className="px-5 py-2"><div className="font-medium">{d.counterparty ?? d.from}</div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></td>
                         <td className="py-2">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)}` : d.summary.slice(0, 48)}</td>
@@ -315,6 +378,7 @@ export function Dashboard() {
               </div>
             </Card>
           </div>
+          )}
 
           {/* Columna derecha */}
           <aside className="min-w-0 space-y-5">
@@ -431,5 +495,73 @@ function EmptyState({ onStart, busy }: { onStart: () => void; busy: boolean }) {
         <span className="text-xs text-muted">Ferretería El Roble S.A. · empresa ficticia · 36 correos de noviembre</span>
       </div>
     </Card>
+  );
+}
+
+const STATUS_ORDER: Record<string, number> = { vencido: 0, pendiente: 1, pagado: 2, informativo: 3 };
+
+function CategoryView({ category, docs, onOpen, onBack }: {
+  category: PulsoState["categories"][number];
+  docs: DocView[];
+  onOpen: (emailId: string) => void;
+  onBack: () => void;
+}) {
+  const sorted = [...docs].sort((a, b) =>
+    (b.openAlerts > 0 ? 1 : 0) - (a.openAlerts > 0 ? 1 : 0) || (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) || b.receivedAt.localeCompare(a.receivedAt));
+  const withAlerts = docs.filter((d) => d.openAlerts > 0).length;
+  const paid = docs.filter((d) => d.status === "pagado");
+  const isNoise = category.category === "ruido";
+  const isClients = category.category === "clientes";
+
+  return (
+    <div className="min-w-0 space-y-5">
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <button onClick={onBack} className="mb-1 text-xs text-muted hover:text-ink hover:underline">← Resumen</button>
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              <span className="h-3 w-3 rounded-full" style={{ background: CATEGORY_COLOR[category.category] }} aria-hidden />
+              {category.label}
+            </h2>
+            <p className="text-sm text-muted">{category.count} correo{category.count === 1 ? "" : "s"}{isNoise ? " que Pulso ignora (publicidad, boletines)." : "."}</p>
+          </div>
+          {!isNoise && (
+            <dl className="grid grid-cols-3 gap-x-6 text-sm">
+              <Metric label={isClients ? "Te deben" : "Pendiente"} value={category.pendingCount ? colones(category.pendingTotal) : "₡0"} />
+              <Metric label="Pagados" value={String(paid.length)} />
+              <Metric label="No cuadra" value={String(withAlerts)} />
+            </dl>
+          )}
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden p-0!">
+        <ul className="divide-y divide-line">
+          {sorted.map((d) => (
+            <li key={d.emailId}>
+              <button onClick={() => onOpen(d.emailId)} className="flex w-full flex-wrap items-start gap-x-4 gap-y-1 px-5 py-3 text-left transition-colors hover:bg-stone-50">
+                <div className="min-w-0 flex-1 basis-56">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{d.counterparty ?? d.from}</span>
+                    {d.openAlerts > 0 && <Badge tone="red">⚠ no cuadra</Badge>}
+                  </div>
+                  <div className="truncate text-sm text-muted">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)} · ${d.subject}` : d.subject}</div>
+                  <div className="text-xs text-muted">Llegó el {fecha(d.receivedAt)}{d.dueDate ? ` · vence ${fecha(d.dueDate)}` : ""}</div>
+                </div>
+                {!isNoise && (
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="tabular font-semibold">{colones(d.amount)}</span>
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {d.status !== "informativo" && <Badge tone={statusTone(d.status)}>{d.status}</Badge>}
+                      {d.haciendaStatus && <Badge tone={haciendaTone(d.haciendaStatus)}>{haciendaLabel(d.haciendaStatus)}</Badge>}
+                    </div>
+                  </div>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </div>
   );
 }

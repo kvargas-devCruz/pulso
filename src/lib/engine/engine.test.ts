@@ -4,6 +4,7 @@ import path from "path";
 import { parseFactura, parseMensajeHacienda } from "./xml";
 import { parseAmounts, parseDueDate } from "./extract";
 import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleUnusualAmounts, type Doc } from "./rules";
+import { companyCharts } from "./status";
 import type { AlertDraft, EmailRecord, Extraction, InvoiceData } from "../types";
 
 const demo = (lote: string, file: string) => path.join(process.cwd(), "data", "bandeja-prueba", lote, file);
@@ -91,5 +92,34 @@ describe("reglas aprendidas (ADR-0007)", () => {
   it("nunca silencia un rechazo de Hacienda", () => {
     const rule = { id: "r", alertType: "vencido" as const, counterpartyTaxId: null, counterparty: null, condition: {}, reason: "", createdFrom: "panel" as const, sourceAlertId: "a", createdAt: "", active: true };
     expect(matchLearnedRule({ ...unusual(1), type: "rechazo_hacienda" }, [rule as never])).toBeNull();
+  });
+});
+
+describe("gráficos del estado (companyCharts)", () => {
+  const doc = (id: string, ext: Partial<Extraction>): Doc => ({
+    email: { id, externalId: id, source: "demo", sender: "x", subject: "", body: "", receivedAt: "2026-11-01T10:00:00Z", attachments: [], runId: "r", contentHash: id } as EmailRecord,
+    ext: { emailId: id, category: "proveedores", kind: "factura", counterparty: "P", counterpartyTaxId: "1", amount: 100, currency: "CRC", dueDate: null, status: "pendiente", summary: "", invoice: null, haciendaStatus: null, haciendaDetail: null, amountSource: "xml", doubtfulFields: [], requestedDocuments: [], extractedBy: "codigo", ...ext },
+  });
+  const inv = (doc: string): InvoiceData => ({ numericKey: "k" + doc, docNumber: doc, issuerName: "P", issuerTaxId: "1", receiverTaxId: null, issuedAt: "2026-11-01", saleCondition: "credito", creditDays: 30, dueDate: null, currency: "CRC", subtotal: 0, tax: 0, total: 100, lines: [] });
+
+  it("suma lo que debés por tipo, sin contar dos veces una factura duplicada ni lo de clientes", () => {
+    const c = companyCharts([
+      doc("a", { invoice: inv("001"), haciendaStatus: "aceptado" }),
+      doc("b", { invoice: inv("001"), haciendaStatus: "aceptado" }), // mismo consecutivo: duplicado
+      doc("c", { category: "ccss", kind: "cobro", amount: 50, invoice: null }),
+      doc("d", { category: "clientes", kind: "cobro_pendiente", amount: 999 }),
+      doc("e", { status: "pagado", amount: 70 }),
+    ], "2026-11-20");
+    expect(c.debtByCategory.map((s) => [s.key, s.amount])).toEqual([["proveedores", 100], ["ccss", 50]]);
+    expect(c.payments.find((s) => s.key === "pagado")?.amount).toBe(70);
+    expect(c.hacienda).toEqual([{ key: "aceptado", label: "Aceptadas", amount: 200, count: 2 }]);
+  });
+
+  it("marca como vencido lo que pasó su fecha y agrupa en Otros más allá de 5 tipos", () => {
+    const cats = ["proveedores", "hacienda", "ccss", "ins", "bancos", "contador"] as const;
+    const c = companyCharts(cats.map((cat, i) => doc(cat, { category: cat, kind: "cobro", amount: 100 - i, dueDate: i === 0 ? "2026-11-01" : null })), "2026-11-20");
+    expect(c.debtByCategory).toHaveLength(6);
+    expect(c.debtByCategory.at(-1)).toMatchObject({ key: "otros", amount: 95 });
+    expect(c.payments.find((s) => s.key === "vencido")?.amount).toBe(100);
   });
 });

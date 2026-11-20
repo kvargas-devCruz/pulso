@@ -3,7 +3,7 @@ import type { Store } from "./store";
 import type { Category } from "./types";
 import { joinDocs, priority } from "./engine/pipeline";
 import { toReview } from "./engine/rules";
-import { semaphore, upcoming, yourWeek, categoryLabel } from "./engine/status";
+import { semaphore, upcoming, yourWeek, categoryLabel, companyCharts } from "./engine/status";
 import { alertTitle } from "./engine/explain";
 import { senderName } from "./engine/extract";
 import { claudeEnabled } from "./engine/claude";
@@ -36,8 +36,12 @@ export async function buildState(store: Store, today: string) {
     .filter((d) => d.ext.kind === "cobro_pendiente" && d.ext.status !== "pagado")
     .map((d) => ({ emailId: d.email.id, counterparty: d.ext.counterparty, amount: d.ext.amount, dueDate: d.ext.dueDate, status: d.ext.status }));
 
+  // Todos los correos (también el ruido) para las pestañas por categoría; la tabla general filtra el ruido.
+  const openByEmail = new Map<string, number>();
+  // Solo el documento principal de cada alerta (en un duplicado, los dos); el resto de emailIds es historial de evidencia.
+  for (const a of alerts.filter((x) => x.status === "abierta"))
+    for (const id of a.type === "duplicado" ? a.emailIds.slice(0, 2) : a.emailIds.slice(0, 1)) openByEmail.set(id, (openByEmail.get(id) ?? 0) + 1);
   const documents = docs
-    .filter((d) => d.ext.category !== "ruido")
     .map((d) => ({
       emailId: d.email.id,
       receivedAt: d.email.receivedAt,
@@ -54,6 +58,7 @@ export async function buildState(store: Store, today: string) {
       amountSource: d.ext.amountSource,
       extractedBy: d.ext.extractedBy,
       summary: d.ext.summary,
+      openAlerts: openByEmail.get(d.email.id) ?? 0,
     }))
     .reverse();
 
@@ -76,6 +81,7 @@ export async function buildState(store: Store, today: string) {
     receivables,
     week: yourWeek(alerts, next),
     categories,
+    charts: companyCharts(docs, today),
     documents,
     rules,
     messages,
