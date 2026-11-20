@@ -3,7 +3,7 @@
 // ≤ 6 partes (el resto va a "Otros"), 2 px de separación entre partes, el color sigue
 // a la entidad (nunca al orden), leyenda siempre visible con nombre + monto + %, y
 // tooltip al pasar el mouse o enfocar con teclado. Los montos ya vienen calculados por código.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { colones } from "./ui";
 
 export interface DonutSlice { key: string; label: string; amount: number; count: number }
@@ -141,5 +141,80 @@ export function Donut({
         </>
       )}
     </figure>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Barras verticales: un solo tono para la magnitud; "Vencido" lleva el color de
+// estado crítico y su etiqueta. Tooltip con el monto exacto al pasar el mouse.
+export interface BarDatum { key: string; label: string; amount: number; count: number; overdue?: boolean }
+
+export function BarChart({ data, empty = "Nada pendiente." }: { data: BarDatum[]; empty?: string }) {
+  const [hover, setHover] = useState<string | null>(null);
+  const max = Math.max(...data.map((d) => d.amount), 0);
+  if (max === 0) return <p className="py-10 text-center text-sm text-muted">{empty}</p>;
+  const ticks = [1, 0.5, 0];
+  return (
+    <div className="relative" role="img" aria-label={data.map((d) => `${d.label}: ${colones(d.amount)}`).join("; ")}>
+      <div className="flex h-52 gap-2 sm:gap-3">
+        {/* eje y recesivo */}
+        <div className="flex w-12 shrink-0 flex-col justify-between pb-6 text-right text-[10px] text-muted tabular">
+          {ticks.map((t) => <span key={t}>{colonesShort(max * t)}</span>)}
+        </div>
+        <div className="relative flex min-w-0 flex-1 items-end gap-2 sm:gap-3">
+          <div className="pointer-events-none absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between">
+            {ticks.map((t) => <div key={t} className={`border-t ${t === 0 ? "border-[#c3c2d4]" : "border-dashed border-line"}`} />)}
+          </div>
+          {data.map((d) => {
+            const h = (d.amount / max) * 100;
+            const color = d.overdue ? STATUS_COLOR.vencido : "#2a78d6";
+            return (
+              <div
+                key={d.key}
+                className="relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                onMouseEnter={() => setHover(d.key)}
+                onMouseLeave={() => setHover(null)}
+              >
+                {hover === d.key && (
+                  <div className="absolute bottom-full z-20 mb-1 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-white shadow-lg" style={{ bottom: `calc(${h}% - 0.5rem)` }}>
+                    <div className="font-semibold tabular">{colones(d.amount)}</div>
+                    <div className="text-white/70">{d.count} cuenta{d.count === 1 ? "" : "s"} · {d.label.toLowerCase()}</div>
+                  </div>
+                )}
+                <div className="flex w-full flex-1 items-end justify-center pb-0">
+                  <div
+                    className="w-full max-w-9 rounded-t-[4px] transition-opacity"
+                    style={{ height: `${Math.max(h, d.amount > 0 ? 2 : 0)}%`, background: color, opacity: hover && hover !== d.key ? 0.45 : 1 }}
+                  />
+                </div>
+                <div className={`mt-1.5 h-4.5 w-full truncate text-center text-[11px] ${d.overdue ? "font-semibold text-red" : "text-muted"}`}>{d.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tarjeta de indicador (estilo "Company goals"): ícono de color, monto, nombre y una
+// barra de progreso con su significado escrito (nunca solo el color).
+export function KpiCard({ icon, tint, value, label, progress, progressLabel, onClick }: {
+  icon: ReactNode; tint: string; value: string; label: string; progress: number | null; progressLabel: string; onClick?: () => void;
+}) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag onClick={onClick} className={`card-soft flex flex-col items-center rounded-2xl bg-surface p-4 text-center ${onClick ? "transition hover:-translate-y-0.5" : ""}`}>
+      <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md" style={{ background: tint, boxShadow: `0 6px 14px -4px ${tint}88` }}>{icon}</span>
+      <span className="tabular text-lg font-bold leading-tight">{value}</span>
+      <span className="text-xs text-muted">{label}</span>
+      <div className="mt-3 w-full">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+          {progress !== null && <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: tint }} />}
+        </div>
+        <div className="mt-1 text-left text-[11px] text-muted">{progressLabel}</div>
+      </div>
+    </Tag>
   );
 }

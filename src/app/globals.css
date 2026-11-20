@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f6f4ef;
+  --bg: #eef0f8;
   --surface: #ffffff;
-  --ink: #16150f;
-  --muted: #5f5b52;
-  --line: #e4e0d6;
-  --accent: #d9480f;
-  --accent-soft: #fff1e8;
+  --ink: #1c1b36;
+  --muted: #6b6a86;
+  --line: #e7e8f2;
+  --accent: #5b4fe0;
+  --accent-soft: #efedfd;
   --red: #c92a2a;
   --red-soft: #fff0f0;
   --amber: #b35c00;
   --amber-soft: #fff6e0;
-  --green: #2b8a3e;
-  --green-soft: #ebfbee;
+  --green: #1f8a3a;
+  --green-soft: #e9f9ee;
   --wa: #075e54;
   --wa-bubble: #dcf8c6;
   --wa-bg: #ece5dd;
@@ -41,7 +41,8 @@
 }
 
 body {
-  background: var(--bg);
+  background: radial-gradient(1200px 600px at 10% -10%, #e4e2fb 0%, transparent 60%), var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
 }
@@ -60,3 +61,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .beat { animation: none; }
 }
+
+/* Tarjetas: blancas, redondeadas, sombra suave (sin borde). */
+.card-soft {
+  box-shadow: 0 1px 2px rgba(28, 27, 54, 0.04), 0 10px 30px -12px rgba(40, 38, 110, 0.14);
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

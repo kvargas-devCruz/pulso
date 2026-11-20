@@ -14,7 +14,7 @@ export function fecha(iso: string | null | undefined): string {
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-line bg-surface p-5 ${className}`}>{children}</section>;
+  return <section className={`card-soft rounded-3xl bg-surface p-5 ${className}`}>{children}</section>;
 }
 
 export function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
@@ -45,7 +45,7 @@ export function Button({
   children: ReactNode; onClick?: () => void; variant?: "primary" | "secondary" | "ghost"; disabled?: boolean; type?: "button" | "submit"; title?: string;
 }) {
   const styles = {
-    primary: "bg-ink text-white hover:bg-stone-800",
+    primary: "bg-accent text-white shadow-sm shadow-accent/30 hover:brightness-110",
     secondary: "border border-line bg-surface text-ink hover:bg-stone-50",
     ghost: "text-muted hover:text-ink hover:bg-stone-100",
   }[variant];
@@ -55,7 +55,7 @@ export function Button({
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${styles}`}
+      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${styles}`}
     >
       {children}
     </button>

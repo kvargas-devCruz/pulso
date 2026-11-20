@@ -122,7 +122,9 @@ export function yourWeek(alerts: Alert[], next: Upcoming[]): WeekItem[] {
 
 export type PayState = "pagado" | "pendiente" | "vencido";
 export interface Slice<K extends string = string> { key: K; label: string; amount: number; count: number }
+export interface WeekBucket { key: string; label: string; amount: number; count: number; overdue: boolean }
 export interface CompanyCharts {
+  dueByWeek: WeekBucket[];
   debtByCategory: Slice<Category | "otros">[];
   payments: Slice<PayState>[];
   hacienda: Slice<"aceptado" | "rechazado" | "sin_respuesta">[];
@@ -173,5 +175,30 @@ export function companyCharts(docs: Doc[], today: string, maxSlices = 5): Compan
     return { key, label: hLabels[key], amount: items.reduce((s, d) => s + (d.ext.amount ?? 0), 0), count: items.length };
   }).filter((s) => s.count > 0);
 
-  return { debtByCategory, payments, hacienda };
+  // Lo que falta pagar, por semana de vencimiento (desde hoy). Sin fecha → "Sin fecha".
+  const weeks: WeekBucket[] = [
+    { key: "vencido", label: "Vencido", amount: 0, count: 0, overdue: true },
+    { key: "w0", label: "Esta semana", amount: 0, count: 0, overdue: false },
+    { key: "w1", label: "Próxima", amount: 0, count: 0, overdue: false },
+    { key: "w2", label: "En 2 semanas", amount: 0, count: 0, overdue: false },
+    { key: "w3", label: "En 3 semanas", amount: 0, count: 0, overdue: false },
+    { key: "later", label: "Más adelante", amount: 0, count: 0, overdue: false },
+    { key: "nodate", label: "Sin fecha", amount: 0, count: 0, overdue: false },
+  ];
+  for (const d of payables) {
+    const st = payState(d, today);
+    if (st === "pagado") continue;
+    let b: WeekBucket;
+    if (st === "vencido") b = weeks[0];
+    else if (!d.ext.dueDate) b = weeks[6];
+    else {
+      const w = Math.floor(daysBetween(today, d.ext.dueDate) / 7);
+      b = w <= 3 ? weeks[1 + w] : weeks[5];
+    }
+    b.amount += d.ext.amount!;
+    b.count++;
+  }
+  const dueByWeek = weeks.filter((w) => w.key !== "nodate" || w.count > 0);
+
+  return { dueByWeek, debtByCategory, payments, hacienda };
 }

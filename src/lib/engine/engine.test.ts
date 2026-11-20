@@ -122,4 +122,16 @@ describe("gráficos del estado (companyCharts)", () => {
     expect(c.debtByCategory.at(-1)).toMatchObject({ key: "otros", amount: 95 });
     expect(c.payments.find((s) => s.key === "vencido")?.amount).toBe(100);
   });
+
+  it("reparte lo pendiente por semana de vencimiento", () => {
+    const c = companyCharts([
+      doc("v", { amount: 10, dueDate: "2026-11-10" }),
+      doc("a", { amount: 20, dueDate: "2026-11-22" }),
+      doc("b", { amount: 30, dueDate: "2026-11-30" }),
+      doc("z", { amount: 40, dueDate: "2027-02-01" }),
+      doc("p", { amount: 99, dueDate: "2026-11-22", status: "pagado" }),
+    ], "2026-11-20");
+    const by = Object.fromEntries(c.dueByWeek.map((w) => [w.key, w.amount]));
+    expect(by).toEqual({ vencido: 10, w0: 20, w1: 30, w2: 0, w3: 0, later: 40 });
+  });
 });

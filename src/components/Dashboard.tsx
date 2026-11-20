@@ -1,13 +1,14 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { PulsoState } from "@/lib/state";
 import { Badge, Button, Card, PulseIcon, SectionTitle, colones, fecha, type Tone } from "./ui";
 import { EvidenceModal, EmailModal, DraftModal } from "./Modals";
 import { Phone } from "./Phone";
-import { CATEGORY_COLOR, Donut, STATUS_COLOR, colonesShort } from "./Charts";
+import { BarChart, CATEGORY_COLOR, Donut, KpiCard, STATUS_COLOR, colonesShort } from "./Charts";
 
 type AlertView = PulsoState["alerts"][number];
 type DocView = PulsoState["documents"][number];
+type View = "inicio" | "correo" | "plata";
 
 const LIGHT = {
   rojo: { dot: "bg-red", soft: "bg-red-soft", text: "text-red", label: "Rojo" },
@@ -35,7 +36,8 @@ export function Dashboard() {
   const [emailId, setEmailId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AlertView | null>(null);
   const [showLog, setShowLog] = useState(false);
-  const [tab, setTab] = useState<string>("resumen");
+  const [view, setView] = useState<View>("inicio");
+  const [cat, setCat] = useState<string>("todos");
 
   const refresh = useCallback(async () => {
     const s = await api<PulsoState>("/api/state");
@@ -90,6 +92,11 @@ export function Dashboard() {
   const closed = state.alerts.filter((a) => a.status === "descartada");
   const empty = state.counts.emails === 0;
   const L = LIGHT[state.semaphore.light];
+  const owed = state.charts.debtByCategory.reduce((t, x) => t + x.amount, 0);
+  const paidTotal = state.charts.payments.find((x) => x.key === "pagado")?.amount ?? 0;
+  const receivableTotal = state.receivables.reduce((t, r) => t + (r.amount ?? 0), 0);
+  const receivableOverdue = state.receivables.filter((r) => r.status === "vencido" || (r.dueDate !== null && r.dueDate < state.today)).reduce((t, r) => t + (r.amount ?? 0), 0);
+  const upcomingTotal = state.upcoming.filter((u) => !u.porCobrar).reduce((t, u) => t + (u.amount ?? 0), 0);
 
   const ingest = (lote: "lote-1" | "lote-2") =>
     act(lote, () => api("/api/ingest", { method: "POST", body: JSON.stringify({ source: "demo", lote }) }),
@@ -97,21 +104,39 @@ export function Dashboard() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-16 pt-5 sm:px-6">
-      {/* Encabezado */}
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
+      {/* Barra superior (logo · navegación · empresa y acciones) */}
+      <header className="card-soft mb-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-surface px-4 py-3 sm:px-5">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7b6ff0] to-[#4a3fd0] text-white shadow-md shadow-accent/30">
             <PulseIcon className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="text-xl font-bold leading-tight">Pulso</h1>
-            <p className="text-sm text-muted">El estado de tu empresa, leído de tu correo</p>
+            <h1 className="text-lg font-bold leading-tight">Pulso</h1>
+            <p className="hidden text-xs text-muted sm:block">El estado de tu empresa, leído de tu correo</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+
+        {!empty && (
+          <nav aria-label="Secciones" className="order-last flex w-full justify-around gap-1 border-t border-line pt-2 md:order-none md:w-auto md:flex-1 md:justify-center md:border-0 md:pt-0">
+            {NAV.map((n) => (
+              <button
+                key={n.key}
+                onClick={() => setView(n.key)}
+                aria-current={view === n.key ? "page" : undefined}
+                className={`group relative flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${view === n.key ? "text-accent" : "text-muted hover:text-ink"}`}
+              >
+                <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${view === n.key ? "bg-accent-soft" : "group-hover:bg-stone-100"}`}>{n.icon}</span>
+                {n.label}
+                {n.key === "inicio" && open.length > 0 && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-red ring-2 ring-surface" aria-label={`${open.length} alertas abiertas`} />}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="mr-1 text-sm sm:text-right">
             <div className="font-medium">{state.company.name}</div>
-            <div className="text-muted">Hoy: {fecha(state.today)}</div>
+            <div className="text-xs text-muted">Hoy: {fecha(state.today)}</div>
           </div>
           {!state.loaded.lote1 && (
             <Button variant="primary" disabled={!!busy} onClick={() => ingest("lote-1")}>
@@ -131,48 +156,33 @@ export function Dashboard() {
         </div>
       </header>
 
-      <div className="mb-5 flex flex-wrap gap-2 text-xs">
+      <div className="mb-5 flex flex-wrap gap-2 px-1 text-xs">
         <Badge tone={state.mode.claude ? "green" : "gray"}>{state.mode.claude ? "Claude activo" : "Extracción sin Claude (heurística)"}</Badge>
         <Badge tone={state.mode.whatsapp ? "green" : "gray"}>{state.mode.whatsapp ? "WhatsApp real (Twilio)" : "WhatsApp simulado"}</Badge>
         <Badge tone={state.mode.store === "supabase" ? "green" : "gray"}>{state.mode.store === "supabase" ? "Supabase" : "Datos locales"}</Badge>
         <Badge tone="gray">Gmail: solo lectura + borradores · nunca envía</Badge>
       </div>
 
-      {!empty && (
-        <nav aria-label="Apartados" className="-mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div role="tablist" className="flex w-max gap-1 rounded-xl border border-line bg-surface p-1">
-            {[{ key: "resumen", label: "Resumen", count: null as number | null }, ...state.categories.filter((c) => c.count > 0).map((c) => ({ key: c.category as string, label: c.label, count: c.count }))].map((t) => (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={tab === t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === t.key ? "bg-ink text-white" : "text-muted hover:bg-stone-100 hover:text-ink"}`}
-              >
-                {t.key !== "resumen" && <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLOR[t.key] }} aria-hidden />}
-                {t.label}
-                {t.count !== null && <span className={`tabular text-xs ${tab === t.key ? "text-white/70" : "text-muted"}`}>{t.count}</span>}
-              </button>
-            ))}
-          </div>
-        </nav>
-      )}
-
       {empty ? (
         <EmptyState busy={busy === "lote-1"} onStart={() => ingest("lote-1")} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {tab !== "resumen" ? (
-            <CategoryView
-              category={state.categories.find((c) => c.category === tab) ?? state.categories[0]}
-              docs={state.documents.filter((d) => d.category === tab)}
-              onOpen={setEmailId}
-              onBack={() => setTab("resumen")}
-            />
+          {view === "correo" && cat !== "todos" ? (
+            <div className="min-w-0 space-y-5">
+              <MailTabs categories={state.categories} cat={cat} onPick={setCat} />
+              <CategoryView
+                category={state.categories.find((c) => c.category === cat) ?? state.categories[0]}
+                docs={state.documents.filter((d) => d.category === cat)}
+                onOpen={setEmailId}
+                onBack={() => setCat("todos")}
+              />
+            </div>
           ) : (
           <div className="min-w-0 space-y-5">
+            {view === "correo" && <MailTabs categories={state.categories} cat={cat} onPick={setCat} />}
+
             {/* Bitácora del agente */}
-            {state.lastRun && (
+            {view === "inicio" && state.lastRun && (
               <Card className="py-4">
                 <div className="flex items-start gap-3">
                   <PulseIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
@@ -191,11 +201,12 @@ export function Dashboard() {
               </Card>
             )}
 
+            {view === "inicio" && (<>
             {/* Semáforo */}
             <Card className={`${L.soft} border-transparent`}>
               <div className="flex flex-wrap items-center gap-5">
                 <div className="flex items-center gap-4">
-                  <span className={`relative flex h-16 w-16 items-center justify-center rounded-full ${L.dot}`} aria-label={`Semáforo en ${L.label}`}>
+                  <span className={`relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full ${L.dot}`} aria-label={`Semáforo en ${L.label}`}>
                     <PulseIcon className="beat h-8 w-8 text-white" />
                   </span>
                   <div>
@@ -212,6 +223,47 @@ export function Dashboard() {
               </div>
             </Card>
 
+            {/* Indicadores (estilo "Company goals") */}
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <KpiCard
+                tint="#2a78d6"
+                icon={<IconWallet />}
+                value={colonesShort(owed)}
+                label="Por pagar"
+                progress={owed + paidTotal ? (100 * paidTotal) / (owed + paidTotal) : null}
+                progressLabel={`${owed + paidTotal ? Math.round((100 * paidTotal) / (owed + paidTotal)) : 0} % ya pagado`}
+                onClick={() => setView("plata")}
+              />
+              <KpiCard
+                tint="#1baf7a"
+                icon={<IconHand />}
+                value={colonesShort(receivableTotal)}
+                label="Te deben"
+                progress={receivableTotal ? (100 * receivableOverdue) / receivableTotal : null}
+                progressLabel={receivableOverdue ? `${colonesShort(receivableOverdue)} ya vencido` : "nada vencido"}
+              />
+              <KpiCard
+                tint="#d03b3b"
+                icon={<IconAlert />}
+                value={colonesShort(state.semaphore.moneyAtRisk)}
+                label="Dinero en riesgo"
+                progress={owed + receivableTotal ? (100 * state.semaphore.moneyAtRisk) / (owed + receivableTotal) : null}
+                progressLabel={`en ${open.length} alerta${open.length === 1 ? "" : "s"} abierta${open.length === 1 ? "" : "s"}`}
+              />
+              <KpiCard
+                tint="#6250d6"
+                icon={<IconCalendar />}
+                value={colonesShort(upcomingTotal)}
+                label="Vence en 7 días"
+                progress={owed ? (100 * upcomingTotal) / owed : null}
+                progressLabel={`${state.semaphore.upcomingCount} vencimiento${state.semaphore.upcomingCount === 1 ? "" : "s"}`}
+                onClick={() => setView("plata")}
+              />
+            </div>
+
+            </>)}
+
+            {view === "plata" && (<>
             {/* Gráficos del estado */}
             <Card>
               <SectionTitle aside={<span className="text-xs text-muted">montos leídos del XML y del correo</span>}>Cómo está tu plata</SectionTitle>
@@ -244,6 +296,14 @@ export function Dashboard() {
               </div>
             </Card>
 
+            <Card>
+              <SectionTitle aside={<span className="text-xs text-muted">sin contar lo ya pagado</span>}>Lo que vence, por semana</SectionTitle>
+              <BarChart data={state.charts.dueByWeek} empty="No tenés nada pendiente de pagar. ✅" />
+            </Card>
+
+            </>)}
+
+            {view === "inicio" && (<>
             {/* Alertas */}
             <Card>
               <SectionTitle aside={<span className="text-sm text-muted">{open.length} abiertas</span>}>Lo que no cuadra</SectionTitle>
@@ -326,13 +386,15 @@ export function Dashboard() {
                 )}
               </Card>
             </div>
+            </>)}
 
+            {view === "correo" && (<>
             {/* Categorías */}
             <Card>
               <SectionTitle>Tu correo, ordenado</SectionTitle>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {state.categories.filter((c) => c.count > 0).map((c) => (
-                  <button key={c.category} type="button" onClick={() => setTab(c.category)} className="rounded-xl border border-line p-3 text-left transition-colors hover:border-ink/30 hover:bg-stone-50">
+                  <button key={c.category} type="button" onClick={() => setCat(c.category)} className="rounded-xl border border-line p-3 text-left transition-colors hover:border-ink/30 hover:bg-stone-50">
                     <div className="flex items-center gap-1.5 text-sm font-medium"><span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLOR[c.category] }} aria-hidden />{c.label}</div>
                     <div className="text-xs text-muted">{c.count} correo{c.count === 1 ? "" : "s"}</div>
                     {c.category !== "ruido" && (
@@ -377,6 +439,7 @@ export function Dashboard() {
                 </table>
               </div>
             </Card>
+            </>)}
           </div>
           )}
 
@@ -518,7 +581,7 @@ function CategoryView({ category, docs, onOpen, onBack }: {
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <button onClick={onBack} className="mb-1 text-xs text-muted hover:text-ink hover:underline">← Resumen</button>
+            <button onClick={onBack} className="mb-1 text-xs text-muted hover:text-ink hover:underline">← Todo el correo</button>
             <h2 className="flex items-center gap-2 text-xl font-bold">
               <span className="h-3 w-3 rounded-full" style={{ background: CATEGORY_COLOR[category.category] }} aria-hidden />
               {category.label}
@@ -562,6 +625,50 @@ function CategoryView({ category, docs, onOpen, onBack }: {
           ))}
         </ul>
       </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Navegación e íconos (trazo simple, heredan el color del texto).
+const ico = "h-[18px] w-[18px]";
+const Svg = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" className={ico} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
+);
+const IconHome = () => <Svg d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10" />;
+const IconMail = () => <Svg d="M3 6h18v12H3zM3 7l9 6 9-6" />;
+const IconChart = () => <Svg d="M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z" />;
+const IconWallet = () => <Svg d="M3 7h15a3 3 0 0 1 3 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-3v3M16 13h2" />;
+const IconHand = () => <Svg d="M4 14h3l4 3h5a2 2 0 0 0 0-4h-4M7 14V9l5-4 5 4M2 20h20" />;
+const IconAlert = () => <Svg d="M12 3l10 18H2zM12 10v5M12 18h.01" />;
+const IconCalendar = () => <Svg d="M4 6h16v15H4zM4 10h16M9 3v4M15 3v4" />;
+
+const NAV: { key: View; label: string; icon: ReactNode }[] = [
+  { key: "inicio", label: "Inicio", icon: <IconHome /> },
+  { key: "correo", label: "Correo", icon: <IconMail /> },
+  { key: "plata", label: "Plata", icon: <IconChart /> },
+];
+
+function MailTabs({ categories, cat, onPick }: { categories: PulsoState["categories"]; cat: string; onPick: (c: string) => void }) {
+  const total = categories.reduce((t, c) => t + c.count, 0);
+  const tabs = [{ key: "todos", label: "Todo", count: total }, ...categories.filter((c) => c.count > 0).map((c) => ({ key: c.category as string, label: c.label, count: c.count }))];
+  return (
+    <div className="no-scrollbar -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0">
+      <div role="tablist" aria-label="Tipos de correo" className="card-soft flex w-max gap-1 rounded-2xl bg-surface p-1.5 sm:w-full sm:flex-wrap">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={cat === t.key}
+            onClick={() => onPick(t.key)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${cat === t.key ? "bg-accent text-white" : "text-muted hover:bg-stone-100 hover:text-ink"}`}
+          >
+            {t.key !== "todos" && <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLOR[t.key] }} aria-hidden />}
+            {t.label}
+            <span className={`tabular text-xs ${cat === t.key ? "text-white/75" : "text-muted"}`}>{t.count}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
