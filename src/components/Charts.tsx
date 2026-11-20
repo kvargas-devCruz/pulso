@@ -15,11 +15,15 @@ export const CATEGORY_COLOR: Record<string, string> = {
   ccss: "#1baf7a",
   ins: "#eda100",
   bancos: "#e87ba4",
-  contador: "#008300",
+  ventas: "#008300",
   clientes: "#6250d6",
+  contador: "#e34948",
   ruido: "#898781",
   otros: "#898781",
 };
+
+/** Medios de pago (orden fijo de la paleta categórica). */
+export const METHOD_COLOR: Record<string, string> = { efectivo: "#2a78d6", tarjeta: "#eb6834", sinpe: "#1baf7a" };
 
 /** Colores de estado (reservados): siempre van con su etiqueta, nunca solos. */
 export const STATUS_COLOR: Record<string, string> = {
@@ -149,7 +153,7 @@ export function Donut({
 // estado crítico y su etiqueta. Tooltip con el monto exacto al pasar el mouse.
 export interface BarDatum { key: string; label: string; amount: number; count: number; overdue?: boolean }
 
-export function BarChart({ data, empty = "Nada pendiente." }: { data: BarDatum[]; empty?: string }) {
+export function BarChart({ data, empty = "Nada pendiente.", detail, color = "#2a78d6" }: { data: BarDatum[]; empty?: string; detail?: (d: BarDatum) => string; color?: string }) {
   const [hover, setHover] = useState<string | null>(null);
   const max = Math.max(...data.map((d) => d.amount), 0);
   if (max === 0) return <p className="py-10 text-center text-sm text-muted">{empty}</p>;
@@ -167,7 +171,7 @@ export function BarChart({ data, empty = "Nada pendiente." }: { data: BarDatum[]
           </div>
           {data.map((d) => {
             const h = (d.amount / max) * 100;
-            const color = d.overdue ? STATUS_COLOR.vencido : "#2a78d6";
+            const fill = d.overdue ? STATUS_COLOR.vencido : color;
             return (
               <div
                 key={d.key}
@@ -178,13 +182,13 @@ export function BarChart({ data, empty = "Nada pendiente." }: { data: BarDatum[]
                 {hover === d.key && (
                   <div className="absolute bottom-full z-20 mb-1 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-white shadow-lg" style={{ bottom: `calc(${h}% - 0.5rem)` }}>
                     <div className="font-semibold tabular">{colones(d.amount)}</div>
-                    <div className="text-white/70">{d.count} cuenta{d.count === 1 ? "" : "s"} · {d.label.toLowerCase()}</div>
+                    <div className="text-white/70">{detail ? detail(d) : `${d.count} cuenta${d.count === 1 ? "" : "s"} · ${d.label.toLowerCase()}`}</div>
                   </div>
                 )}
                 <div className="flex w-full flex-1 items-end justify-center pb-0">
                   <div
                     className="w-full max-w-9 rounded-t-[4px] transition-opacity"
-                    style={{ height: `${Math.max(h, d.amount > 0 ? 2 : 0)}%`, background: color, opacity: hover && hover !== d.key ? 0.45 : 1 }}
+                    style={{ height: `${Math.max(h, d.amount > 0 ? 2 : 0)}%`, background: fill, opacity: hover && hover !== d.key ? 0.45 : 1 }}
                   />
                 </div>
                 <div className={`mt-1.5 h-4.5 w-full truncate text-center text-[11px] ${d.overdue ? "font-semibold text-red" : "text-muted"}`}>{d.label}</div>

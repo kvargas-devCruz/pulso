@@ -3,9 +3,10 @@ import { promises as fs } from "fs";
 import path from "path";
 import { parseFactura, parseMensajeHacienda } from "./xml";
 import { parseAmounts, parseDueDate } from "./extract";
-import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleUnusualAmounts, type Doc } from "./rules";
+import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleSettlementMismatch, ruleUnusualAmounts, type Doc } from "./rules";
+import { parseSettlementCsv, parseSettlementText } from "./settlement";
 import { companyCharts } from "./status";
-import type { AlertDraft, EmailRecord, Extraction, InvoiceData } from "../types";
+import type { AlertDraft, EmailRecord, Extraction, InvoiceData, SettlementData } from "../types";
 
 const demo = (lote: string, file: string) => path.join(process.cwd(), "data", "bandeja-prueba", lote, file);
 
@@ -133,5 +134,77 @@ describe("gráficos del estado (companyCharts)", () => {
     ], "2026-11-20");
     const by = Object.fromEntries(c.dueByWeek.map((w) => [w.key, w.amount]));
     expect(by).toEqual({ vencido: 10, w0: 20, w1: 30, w2: 0, w3: 0, later: 40 });
+  });
+});
+
+describe("cierres del datáfono y de facturación", () => {
+  async function demoFile(suffix: string) {
+    const files = await fs.readdir(path.join(process.cwd(), "data", "bandeja-prueba", "lote-1"));
+    const f = files.find((x) => x.endsWith(suffix))!;
+    return JSON.parse(await fs.readFile(demo("lote-1", f), "utf8")) as { asunto: string; cuerpo: string; adjuntos: { contenido: string }[] };
+  }
+
+  it("lee los CSV de la bandeja de prueba con montos exactos", async () => {
+    const caja = parseSettlementCsv((await demoFile("cierre-caja-17.json")).adjuntos[0].contenido)!;
+    const pos = parseSettlementCsv((await demoFile("cierre-datafono-17.json")).adjuntos[0].contenido)!;
+    expect(caja).toMatchObject({ source: "facturacion", date: "2026-11-17", card: 412300, fromFile: true });
+    expect(caja.total).toBe((caja.cash ?? 0) + caja.card + (caja.sinpe ?? 0));
+    expect(pos).toMatchObject({ source: "datafono", date: "2026-11-17", card: 367300, fromFile: true });
+    expect(pos.deposit).toBe(pos.card - pos.commission!);
+  });
+
+  it("si no viene el CSV, lee las líneas rotuladas del correo", async () => {
+    const pos = await demoFile("cierre-datafono-17.json");
+    expect(parseSettlementText(pos.asunto, pos.cuerpo)).toMatchObject({ source: "datafono", date: "2026-11-17", card: 367300, fromFile: false });
+    const caja = await demoFile("cierre-caja-17.json");
+    expect(parseSettlementText(caja.asunto, caja.cuerpo)).toMatchObject({ source: "facturacion", card: 412300, fromFile: false });
+    expect(parseSettlementCsv(["hola,mundo", "1,2"].join("\n"))).toBeNull();
+  });
+
+  const st = (source: "datafono" | "facturacion", date: string, card: number, fromFile = true): SettlementData => ({
+    source, date, card, cash: source === "facturacion" ? 100000 : null, sinpe: source === "facturacion" ? 50000 : null,
+    total: source === "facturacion" ? card + 150000 : card, commission: null, deposit: null, transactions: null, invoices: 30, batch: null, fromFile,
+  });
+  const sdoc = (id: string, s: SettlementData, at = "2026-11-17T20:00:00-06:00"): Doc => ({
+    email: { id, externalId: id, source: "demo", sender: "x", subject: "", body: "", receivedAt: at, attachments: [], runId: "r", contentHash: id } as EmailRecord,
+    ext: { emailId: id, category: "ventas", kind: s.source === "datafono" ? "cierre_datafono" : "cierre_ventas", counterparty: s.source === "datafono" ? "Banco" : "Software", counterpartyTaxId: null, amount: s.card, currency: "CRC", dueDate: null, status: "informativo", summary: "", invoice: null, haciendaStatus: null, haciendaDetail: null, amountSource: "archivo", doubtfulFields: [], requestedDocuments: [], extractedBy: "codigo", settlement: s },
+  });
+
+  it("alerta con confianza alta cuando faltan colones en el datáfono", () => {
+    const [a] = ruleSettlementMismatch([sdoc("c", st("facturacion", "2026-11-17", 412300)), sdoc("d", st("datafono", "2026-11-17", 367300))]);
+    expect(a).toMatchObject({ type: "cierre_descuadre", confidence: "alta", amountAtRisk: 45000, emailIds: ["c", "d"] });
+    expect(a.meta.direction).toBe("faltante");
+  });
+
+  it("no alerta si cuadra o la diferencia es de redondeo; tampoco si falta uno de los dos cierres", () => {
+    expect(ruleSettlementMismatch([sdoc("c", st("facturacion", "2026-11-17", 400000)), sdoc("d", st("datafono", "2026-11-17", 400000))])).toEqual([]);
+    expect(ruleSettlementMismatch([sdoc("c", st("facturacion", "2026-11-17", 400000)), sdoc("d", st("datafono", "2026-11-17", 399200))])).toEqual([]);
+    expect(ruleSettlementMismatch([sdoc("c", st("facturacion", "2026-11-17", 400000)), sdoc("d", st("datafono", "2026-11-18", 300000))])).toEqual([]);
+  });
+
+  it("si alguno se leyó del texto baja a confianza media; si el datáfono cobró de más es 'sobrante'", () => {
+    const [a] = ruleSettlementMismatch([sdoc("c", st("facturacion", "2026-11-17", 300000)), sdoc("d", st("datafono", "2026-11-17", 350000, false))]);
+    expect(a).toMatchObject({ confidence: "media", amountAtRisk: 50000 });
+    expect(a.meta.direction).toBe("sobrante");
+  });
+
+  it("'es normal' en un descuadre aprende un tope de diferencia", () => {
+    const [a] = ruleSettlementMismatch([sdoc("c", st("facturacion", "2026-11-17", 412300)), sdoc("d", st("datafono", "2026-11-17", 367300))]);
+    const cond = learnedConditionFor(a);
+    expect(cond.maxDiff).toBe(54000);
+    const rule = { id: "r", alertType: "cierre_descuadre", counterpartyTaxId: null, counterparty: "Banco", condition: cond, reason: "", createdFrom: "panel", sourceAlertId: a.key, createdAt: "", active: true } as const;
+    expect(matchLearnedRule(a, [rule])).not.toBeNull();
+    expect(matchLearnedRule({ ...a, amountAtRisk: 90000 }, [rule])).toBeNull();
+  });
+
+  it("ventas por día y por medio de pago salen del cierre de caja", () => {
+    const c = companyCharts([
+      sdoc("c1", st("facturacion", "2026-11-16", 200000)),
+      sdoc("c2", st("facturacion", "2026-11-17", 300000)),
+      sdoc("d1", st("datafono", "2026-11-17", 300000)),
+    ], "2026-11-20");
+    expect(c.salesByDay.map((d) => [d.label, d.amount])).toEqual([["16/11", 350000], ["17/11", 450000]]);
+    expect(Object.fromEntries(c.salesByMethod.map((m) => [m.key, m.amount]))).toEqual({ efectivo: 200000, tarjeta: 500000, sinpe: 100000 });
+    expect(c.debtByCategory).toEqual([]); // los cierres no son deudas
   });
 });

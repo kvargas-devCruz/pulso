@@ -19,7 +19,7 @@ export async function buildState(store: Store, today: string) {
   const sem = semaphore(alerts, next);
   const lastRun = [...runs].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null;
 
-  const categories = (["proveedores", "hacienda", "ccss", "ins", "bancos", "clientes", "contador", "ruido"] as Category[]).map((c) => {
+  const categories = (["proveedores", "hacienda", "ccss", "ins", "bancos", "clientes", "contador", "ventas", "ruido"] as Category[]).map((c) => {
     const items = docs.filter((d) => d.ext.category === c);
     const pend = items.filter((d) => d.ext.status === "pendiente" || d.ext.status === "vencido");
     const unique = new Map(pend.map((d) => [d.ext.invoice ? `${d.ext.invoice.issuerTaxId}:${d.ext.invoice.docNumber}` : d.email.id, d]));

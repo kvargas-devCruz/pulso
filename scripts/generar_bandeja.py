@@ -366,6 +366,56 @@ for slug, rem, asunto in [
                   {"categoria": "ruido", "tipo": "ruido", "contraparte": None, "monto": None,
                    "vencimiento": None, "estado": "informativo"})
 
+# Cierres diarios: datáfono (banco) + cierre de caja del software de facturación.
+# Generador aleatorio propio para no cambiar los montos ni los IDs de lo anterior.
+# Todos cuadran (tarjeta en facturación = bruto del datáfono) excepto el 17/11: faltan ₡45 000.
+rng = random.Random(1711)
+DATAFONO = {"nombre": "Banco Horizonte", "correo": "cierres@bancohorizonte.test"}
+SOFTWARE = {"nombre": "FacturaÁgil", "correo": "cierres@facturaagil.test"}
+DIA_DESCUADRE, FALTANTE = D(11, 17), 45000
+cierre_ids = {}
+for i, dia in enumerate([D(11, 12), D(11, 13), D(11, 16), D(11, 17), D(11, 18), D(11, 19)]):
+    efectivo = rng.randrange(180, 420) * 1000 + rng.choice([0, 250, 500, 750])
+    tarjeta = 412300 if dia == DIA_DESCUADRE else rng.randrange(250, 520) * 1000 + rng.choice([0, 100, 300, 600])
+    sinpe = rng.randrange(60, 190) * 1000 + rng.choice([0, 500])
+    total = efectivo + tarjeta + sinpe
+    n_facturas = rng.randrange(28, 61)
+    bruto = tarjeta - FALTANTE if dia == DIA_DESCUADRE else tarjeta
+    transacciones = rng.randrange(14, 33)
+    comision = round(bruto * 0.025)
+    neto = bruto - comision
+    lote_n = 412 + i
+    f = dia.strftime("%d/%m/%Y")
+    iso = dia.isoformat()
+
+    caja_csv = ("fecha,facturas_emitidas,efectivo,tarjeta,sinpe,total\n"
+                f"{iso},{n_facturas},{efectivo:.2f},{tarjeta:.2f},{sinpe:.2f},{total:.2f}\n")
+    caja_id = agregar(L1, f"cierre-caja-{dia.day}", {
+        "remitente": f"{SOFTWARE['nombre']} <{SOFTWARE['correo']}>", "fecha": ts(dia, 20, rng.randint(0, 59)),
+        "asunto": f"Cierre de caja {f} · {EMPRESA['nombre']}",
+        "cuerpo": (f"Cierre de caja del {f}.\n\nFacturas emitidas: {n_facturas}\nEfectivo: {colones(efectivo)}\n"
+                   f"Tarjeta: {colones(tarjeta)}\nSINPE Móvil: {colones(sinpe)}\nTotal vendido: {colones(total)}\n\n"
+                   "Detalle en el archivo adjunto.\n(FICTICIO: simulado para la demo.)"),
+        "adjuntos": [{"nombre": f"cierre-caja-{iso}.csv", "tipo": "text/csv", "contenido": caja_csv}]},
+        {"categoria": "ventas", "tipo": "cierre_ventas", "contraparte": SOFTWARE["nombre"], "monto": float(total),
+         "moneda": "CRC", "vencimiento": None, "estado": "informativo", "fuente_monto": "archivo",
+         "cierre": {"fecha": iso, "efectivo": efectivo, "tarjeta": tarjeta, "sinpe": sinpe, "total": total}})
+
+    lote_csv = ("fecha,lote,transacciones,monto_bruto,comision,neto_depositar\n"
+                f"{iso},{lote_n:04d},{transacciones},{bruto:.2f},{comision:.2f},{neto:.2f}\n")
+    dat_id = agregar(L1, f"cierre-datafono-{dia.day}", {
+        "remitente": f"{DATAFONO['nombre']} <{DATAFONO['correo']}>", "fecha": ts(dia, 22, rng.randint(0, 59)),
+        "asunto": f"Cierre de lote datáfono {f}",
+        "cuerpo": (f"Estimado comercio:\n\nEl cierre del lote {lote_n:04d} de su datáfono del {f} se procesó con éxito.\n\n"
+                   f"Transacciones: {transacciones}\nMonto bruto: {colones(bruto)}\nComisión: {colones(comision)}\n"
+                   f"Neto a depositar: {colones(neto)}\n\nEl depósito se acredita el siguiente día hábil.\n"
+                   "(FICTICIO: simulado para la demo.)"),
+        "adjuntos": [{"nombre": f"cierre-lote-{lote_n:04d}.csv", "tipo": "text/csv", "contenido": lote_csv}]},
+        {"categoria": "ventas", "tipo": "cierre_datafono", "contraparte": DATAFONO["nombre"], "monto": float(bruto),
+         "moneda": "CRC", "vencimiento": None, "estado": "informativo", "fuente_monto": "archivo",
+         "cierre": {"fecha": iso, "tarjeta": bruto, "comision": comision, "neto": neto}})
+    cierre_ids[dia] = (caja_id, dat_id)
+
 # ---------------------------------------------------------------- LOTE 2 (llega en vivo)
 L2 = "lote-2"
 valle_dup_id, _, _ = factura(
@@ -394,6 +444,9 @@ alerta("cobro_sin_factura", "alta", [cobro_sf_id], 310000,
 alerta("vencido", "alta", [banco_venc_id], 425000, "Cuota de préstamo vencida el 15/11/2026.")
 alerta("vencido", "alta", [cliente_pend_id], 560000,
        "Cobro pendiente a cliente, vencido el 04/11/2026.", "Es dinero POR COBRAR.")
+alerta("cierre_descuadre", "alta", list(cierre_ids[DIA_DESCUADRE]), FALTANTE,
+       "El cierre de caja registra ₡412 300 en ventas con tarjeta el 17/11/2026, pero el datáfono cobró ₡367 300: faltan ₡45 000.",
+       "Los otros 5 días cuadran.")
 esperado["revisar"] = [{"correo": torn_sin_id, "razon": "Factura sin respuesta de Hacienda (confianza baja: revisar, no alerta)."}]
 esperado["sin_alerta_si_se_enseno"] = [{"correo": pinar_t2_id, "estado": "normal_aprendido"}]
 esperado["proximos_7_dias"] = ["CCSS planilla 26/11 (₡1 248 750)", "Contador: documentos para el 25/11"]
@@ -438,7 +491,7 @@ lineas += ["", "## Semáforo esperado", "",
            f"- Después del lote 1: **{esperado['semaforo']['despues_lote_1']}**",
            f"- Después del lote 2: **{esperado['semaforo']['despues_lote_2']}**",
            "", "## Guion de la demo con estos datos", "",
-           "1. Procesar el **lote 1** → semáforo rojo, bitácora y alertas (rechazo de Hacienda, cemento inusual, pintura probable, cobro sin factura, vencidos).",
+           "1. Procesar el **lote 1** → semáforo rojo, bitácora y alertas (rechazo de Hacienda, cemento inusual, pintura probable, cobro sin factura, vencidos y el cierre del 17/11 que no cuadra).",
            "2. Marcar **Maderas El Pinar** como normal (\"2\" en WhatsApp).",
            "3. Procesar el **lote 2** (\"llegó un correo\") → **duplicado exacto de Distribuidora del Valle** → WhatsApp → \"1\" → borrador en Gmail.",
            f"4. Mostrar que **{pinar_t2_id}** quedó en gris: \"Normal según tu decisión\"."]

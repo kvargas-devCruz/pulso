@@ -37,7 +37,7 @@ export interface WeekItem {
 
 const LABEL: Record<Category, string> = {
   hacienda: "Hacienda", ccss: "CCSS", ins: "INS", bancos: "Bancos", proveedores: "Proveedores",
-  clientes: "Clientes", contador: "Contador", ruido: "Ruido",
+  clientes: "Clientes", contador: "Contador", ventas: "Ventas", ruido: "Ruido",
 };
 export const categoryLabel = (c: Category) => LABEL[c];
 
@@ -99,6 +99,8 @@ export function yourWeek(alerts: Alert[], next: Upcoming[]): WeekItem[] {
       : a.type === "duplicado" ? `Aclarar posible factura duplicada de ${a.counterparty}`
       : a.type === "monto_inusual" ? `Revisar el cobro de ${a.counterparty}`
       : a.type === "rechazo_hacienda" ? `Pedir a ${a.counterparty} que corrija la factura rechazada`
+      : a.type === "cierre_descuadre"
+        ? (a.meta.direction === "faltante" ? `Revisar con ${a.counterparty} el cierre del datáfono del ${fecha(String(a.meta.date))}` : `Revisar las ventas con tarjeta del ${fecha(String(a.meta.date))}`)
       : `Verificar el cobro de ${a.counterparty} (no hay factura)`;
     items.push({ priority: base + Math.min(9, Math.log10((a.amountAtRisk ?? 1) + 1)), title, why: a.reason, amount: a.amountAtRisk, emailId: a.emailIds[0], alertId: a.id });
   }
@@ -123,8 +125,12 @@ export function yourWeek(alerts: Alert[], next: Upcoming[]): WeekItem[] {
 export type PayState = "pagado" | "pendiente" | "vencido";
 export interface Slice<K extends string = string> { key: K; label: string; amount: number; count: number }
 export interface WeekBucket { key: string; label: string; amount: number; count: number; overdue: boolean }
+export interface SalesDay { key: string; label: string; amount: number; count: number; cash: number; card: number; sinpe: number }
 export interface CompanyCharts {
   dueByWeek: WeekBucket[];
+  /** Ventas por día, del cierre de caja del software de facturación (un cierre por día). */
+  salesByDay: SalesDay[];
+  salesByMethod: Slice<"efectivo" | "tarjeta" | "sinpe">[];
   debtByCategory: Slice<Category | "otros">[];
   payments: Slice<PayState>[];
   hacienda: Slice<"aceptado" | "rechazado" | "sin_respuesta">[];
@@ -200,5 +206,28 @@ export function companyCharts(docs: Doc[], today: string, maxSlices = 5): Compan
   }
   const dueByWeek = weeks.filter((w) => w.key !== "nodate" || w.count > 0);
 
-  return { dueByWeek, debtByCategory, payments, hacienda };
+  // Ventas: un cierre de caja por día (si llega dos veces, cuenta el primero).
+  const salesDocs = new Map<string, Doc>();
+  for (const d of [...docs].sort((a, b) => a.email.receivedAt.localeCompare(b.email.receivedAt)))
+    if (d.ext.settlement?.source === "facturacion" && !salesDocs.has(d.ext.settlement.date)) salesDocs.set(d.ext.settlement.date, d);
+  const salesByDay: SalesDay[] = [...salesDocs.values()]
+    .map((d) => d.ext.settlement!)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((st) => ({
+      key: st.date,
+      label: `${st.date.slice(8, 10)}/${st.date.slice(5, 7)}`,
+      amount: st.total,
+      count: st.invoices ?? 0,
+      cash: st.cash ?? 0,
+      card: st.card,
+      sinpe: st.sinpe ?? 0,
+    }));
+  const sum = (f: (x: SalesDay) => number) => salesByDay.reduce((t, x) => t + f(x), 0);
+  const salesByMethod = ([
+    { key: "efectivo", label: "Efectivo", amount: sum((x) => x.cash), count: salesByDay.length },
+    { key: "tarjeta", label: "Tarjeta", amount: sum((x) => x.card), count: salesByDay.length },
+    { key: "sinpe", label: "SINPE Móvil", amount: sum((x) => x.sinpe), count: salesByDay.length },
+  ] as Slice<"efectivo" | "tarjeta" | "sinpe">[]).filter((x) => x.amount > 0);
+
+  return { dueByWeek, salesByDay, salesByMethod, debtByCategory, payments, hacienda };
 }

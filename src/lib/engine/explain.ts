@@ -9,6 +9,7 @@ const TYPE_LABEL: Record<AlertDraft["type"], string> = {
   cobro_sin_factura: "Cobro sin factura",
   rechazo_hacienda: "Factura rechazada por Hacienda",
   vencido: "Vencido",
+  cierre_descuadre: "El cierre no cuadra",
 };
 export const alertTitle = (a: AlertDraft) =>
   a.type === "vencido" && a.meta.porCobrar ? "Cobro pendiente vencido" : TYPE_LABEL[a.type];
@@ -29,8 +30,15 @@ export function explain(a: AlertDraft): string {
       return a.meta.porCobrar
         ? `${a.counterparty} todavía no te paga. Un recordatorio amable suele ser suficiente.`
         : `Este pago ya venció. Pagarlo pronto evita intereses o recargos.`;
+    case "cierre_descuadre":
+      return a.meta.direction === "faltante"
+        ? `Ese día vendiste más con tarjeta de lo que el datáfono cobró. Puede ser un voucher que no pasó o un error en la liquidación: revisá el lote con el banco antes de que pase el plazo de reclamo.`
+        : `El datáfono cobró más de lo que facturaste con tarjeta ese día. Puede ser una venta sin factura o un cobro de más: revisá los vouchers y emití la factura que falte.`;
   }
 }
+
+/** A qué correo responde la acción: en un descuadre, al del datáfono (el banco); si no, al principal. */
+export const actionEmailId = (a: AlertDraft) => (a.type === "cierre_descuadre" ? a.emailIds[1] ?? a.emailIds[0] : a.emailIds[0]);
 
 function emailAddress(sender: string | undefined): string | null {
   const m = sender?.match(/<([^>]+)>/);
@@ -76,6 +84,24 @@ export function draftAction(
       body =
         `Hola, equipo de ${alert.counterparty}:\n\n` +
         `Recibimos su solicitud de pago por ${colones(alert.amountAtRisk)}, pero no tenemos la factura electrónica correspondiente. ¿Nos la pueden enviar para poder procesar el pago?\n\n${firma}`;
+      break;
+    case "cierre_descuadre":
+      if (alert.meta.direction === "faltante") {
+        kind = "correo_proveedor";
+        subject = `Consulta sobre el cierre del datáfono del ${fecha(alert.meta.date as string)}`;
+        body =
+          `Hola, equipo de ${alert.counterparty}:
+
+` +
+          `En el cierre del lote ${alert.meta.batch ?? ""} del ${fecha(alert.meta.date as string)} el datáfono liquidó ${colones(Number(alert.meta.posCard))} en ventas con tarjeta, pero según nuestro sistema de facturación ese día vendimos ${colones(Number(alert.meta.salesCard))} con tarjeta. Hay una diferencia de ${colones(alert.amountAtRisk)}. ¿Nos ayudan a revisar si quedó alguna transacción sin liquidar?
+
+${firma}`;
+      } else {
+        kind = "recordatorio";
+        subject = `Revisar ventas con tarjeta del ${fecha(alert.meta.date as string)}`;
+        body = `Recordatorio interno: el datáfono cobró ${colones(Number(alert.meta.posCard))} el ${fecha(alert.meta.date as string)}, pero en ${alert.meta.salesSoftware ?? "el sistema de facturación"} solo hay ${colones(Number(alert.meta.salesCard))} con tarjeta. Revisá los vouchers y emití la factura que falte (${colones(alert.amountAtRisk)}).`;
+        return { alertId: alert.id, kind, to: null, subject, draft: body, status: "pendiente", approvedVia: null, approvedAt: null, gmailDraftId: null };
+      }
       break;
     case "vencido":
       if (alert.meta.porCobrar) {

@@ -30,6 +30,13 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 - `npm run eval:supabase`: el mismo eval contra Postgres real → **8/8 alertas · 0 falsos positivos · extracción 100 %**, igual que con el archivo local. `SupabaseStore` funcionó sin cambios de lógica.
 - Producción en Vercel: https://pulso-mu-nine.vercel.app. Flujo principal probado dos veces seguidas contra producción (lote 1 → enseñar → lote 2 → posible duplicado → WhatsApp → "1" → acción aprobada vía whatsapp en Supabase) y revisión visual en escritorio y celular.
 
+**Cierres del datáfono y de caja (viernes en la noche):**
+- Pulso lee el cierre de lote del datáfono (banco) y el cierre de caja del software de facturación desde su CSV adjunto, con código (si no hay CSV, de las líneas rotuladas del correo, con confianza media).
+- Regla nueva `cierre_descuadre`: las ventas con tarjeta del cierre de caja tienen que coincidir con lo que cobró el datáfono ese día (tolerancia ₡1 000 o 0,5 %). El borrador va al banco si faltan colones, o es un recordatorio interno si el datáfono cobró de más.
+- Vista Plata: ventas por día y por medio de pago; indicador "Ventas de la semana" en Inicio.
+- Bandeja de prueba: 12 cierres nuevos (6 días, uno con ₡45 000 de diferencia). `npm run eval` → **9/9 alertas · 0 falsos positivos · extracción 100 % (48 correos)**. `npm test`: 20 pruebas.
+- Formato de los cierres: ficticio. Falta validarlo con un cierre real del datáfono y del software que use el restaurante.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:

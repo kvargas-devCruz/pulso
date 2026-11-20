@@ -1,0 +1,15 @@
+{
+  "id": "lote-1-43",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "FacturaÁgil <cierres@facturaagil.test>",
+  "fecha": "2026-11-17T20:55:00-06:00",
+  "asunto": "Cierre de caja 17/11/2026 · Ferretería El Roble S.A.",
+  "cuerpo": "Cierre de caja del 17/11/2026.\n\nFacturas emitidas: 33\nEfectivo: ₡369 750\nTarjeta: ₡412 300\nSINPE Móvil: ₡84 500\nTotal vendido: ₡866 550\n\nDetalle en el archivo adjunto.\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": [
+    {
+      "nombre": "cierre-caja-2026-11-17.csv",
+      "tipo": "text/csv",
+      "contenido": "fecha,facturas_emitidas,efectivo,tarjeta,sinpe,total\n2026-11-17,33,369750.00,412300.00,84500.00,866550.00\n"
+    }
+  ]
+}

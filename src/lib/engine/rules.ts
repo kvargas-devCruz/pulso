@@ -15,6 +15,9 @@ export const THRESHOLDS = {
   unusualMediumRatio: 1.5,
   unusualMediumMinPrev: 2,
   upcomingDays: 7,
+  /** Diferencia que se tolera entre el datáfono y el cierre de caja (redondeos, propinas). */
+  settlementMinDiff: 1000,
+  settlementMinPct: 0.005,
 };
 
 const invoices = (docs: Doc[]) =>
@@ -198,6 +201,54 @@ export function ruleOverdue(docs: Doc[], today: string): AlertDraft[] {
     });
 }
 
+// ---------------------------------------------------------------- cierre que no cuadra
+/**
+ * Las ventas con tarjeta del cierre de caja (software de facturación) tienen que coincidir
+ * con lo que cobró el datáfono ese mismo día. Alta: los dos leídos del CSV. Media: alguno
+ * leído del texto del correo. Dentro de la tolerancia, cuadra y no hay alerta.
+ */
+export function ruleSettlementMismatch(docs: Doc[]): AlertDraft[] {
+  const byDate = new Map<string, { pos?: Doc; sales?: Doc }>();
+  for (const d of [...docs].sort((a, b) => a.email.receivedAt.localeCompare(b.email.receivedAt))) {
+    const st = d.ext.settlement;
+    if (!st) continue;
+    const day = byDate.get(st.date) ?? {};
+    if (st.source === "datafono") day.pos ??= d;
+    else day.sales ??= d;
+    byDate.set(st.date, day);
+  }
+  const out: AlertDraft[] = [];
+  for (const [date, { pos, sales }] of byDate) {
+    if (!pos || !sales) continue;
+    const posCard = pos.ext.settlement!.card;
+    const salesCard = sales.ext.settlement!.card;
+    const diff = salesCard - posCard; // > 0: el datáfono cobró menos de lo facturado con tarjeta
+    const tolerance = Math.max(THRESHOLDS.settlementMinDiff, THRESHOLDS.settlementMinPct * Math.max(posCard, salesCard));
+    if (Math.abs(diff) <= tolerance) continue;
+    const exact = pos.ext.settlement!.fromFile && sales.ext.settlement!.fromFile;
+    const missing = diff > 0;
+    out.push({
+      key: `cierre_descuadre:${date}`,
+      type: "cierre_descuadre",
+      confidence: exact ? "alta" : "media",
+      reason: missing
+        ? `El cierre de caja registra ${colones(salesCard)} en ventas con tarjeta el ${fecha(date)}, pero el datáfono cobró ${colones(posCard)}: faltan ${colones(diff)}.`
+        : `El datáfono cobró ${colones(posCard)} el ${fecha(date)}, pero el cierre de caja registra ${colones(salesCard)} en ventas con tarjeta: hay ${colones(-diff)} cobrados con tarjeta sin factura registrada.`,
+      ruleApplied: exact ? "cierre_descuadre.csv" : "cierre_descuadre.texto",
+      emailIds: [sales.email.id, pos.email.id],
+      amountAtRisk: Math.abs(diff),
+      counterparty: pos.ext.counterparty,
+      counterpartyTaxId: null,
+      meta: {
+        date, posCard, salesCard, diff, direction: missing ? "faltante" : "sobrante",
+        commission: pos.ext.settlement!.commission, deposit: pos.ext.settlement!.deposit,
+        batch: pos.ext.settlement!.batch, salesSoftware: sales.ext.counterparty,
+      },
+    });
+  }
+  return out;
+}
+
 /** Documentos que no son alerta pero hay que revisar (confianza baja). */
 export function toReview(docs: Doc[]): { emailId: string; reason: string }[] {
   const out: { emailId: string; reason: string }[] = [];
@@ -217,6 +268,7 @@ export function runRules(docs: Doc[], today: string): AlertDraft[] {
     ...ruleUnusualAmounts(docs),
     ...ruleChargeWithoutInvoice(docs),
     ...ruleOverdue(docs, today),
+    ...ruleSettlementMismatch(docs),
   ].filter((a) => a.confidence !== "baja");
 }
 
@@ -237,6 +289,10 @@ export function matchLearnedRule(alert: AlertDraft, rules: LearnedRule[]): Learn
       if (r.condition.amount !== undefined && Math.abs(Number(alert.meta.amount) - r.condition.amount) < 0.01) return r;
       continue;
     }
+    if (alert.type === "cierre_descuadre") {
+      if (r.condition.maxDiff !== undefined && (alert.amountAtRisk ?? Infinity) <= r.condition.maxDiff) return r;
+      continue;
+    }
     if (alert.type === "vencido" || alert.type === "cobro_sin_factura") {
       if (!r.condition.emailId || alert.emailIds.includes(r.condition.emailId)) return r;
     }
@@ -251,5 +307,7 @@ export function learnedConditionFor(alert: AlertDraft): LearnedRule["condition"]
     return { maxRatio: Math.round(Math.max(ratio * 1.2, THRESHOLDS.unusualHighRatio) * 100) / 100 };
   }
   if (alert.type === "duplicado") return { amount: Number(alert.meta.amount ?? alert.amountAtRisk ?? 0) };
+  // "Es normal" en un descuadre: diferencias de hasta este monto con ese datáfono (p. ej. propinas).
+  if (alert.type === "cierre_descuadre") return { maxDiff: Math.round((alert.amountAtRisk ?? 0) * 1.2) };
   return { emailId: alert.emailIds[0] };
 }

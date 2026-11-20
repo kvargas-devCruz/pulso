@@ -7,7 +7,7 @@ import type { Store } from "../store";
 import type { SourceAdapter } from "../ingest";
 import { extractEmail, haciendaMessagesFromEmail, invoicesFromEmail, senderDomain, type Contact, type ExtractContext } from "./extract";
 import { learnedConditionFor, matchLearnedRule, runRules, type Doc } from "./rules";
-import { draftAction, explain, whatsappAlertText, alertTitle } from "./explain";
+import { actionEmailId, draftAction, explain, whatsappAlertText, alertTitle } from "./explain";
 import { sendWhatsApp } from "../notify/whatsapp";
 import { colones, plural } from "../format";
 
@@ -146,7 +146,7 @@ export async function runIngest(store: Store, adapter: SourceAdapter, today: str
   // 4. Acciones propuestas (nada se envía sin aprobación)
   const byEmail = new Map(docs.map((d) => [d.email.id, d]));
   for (const a of newOpen) {
-    const d = byEmail.get(a.emailIds[0]);
+    const d = byEmail.get(actionEmailId(a));
     const draft = draftAction(a, company, d?.ext, d?.email.sender);
     if (draft) await store.upsertAction({ ...draft, id: id("ac", a.id), createdAt: nowIso() });
   }
@@ -192,7 +192,7 @@ export async function approveAlert(store: Store, alertId: string, via: "panel" |
   if (!action) {
     const company = await store.getCompany();
     const docs = joinDocs(await store.listEmails(), await store.listExtractions());
-    const d = docs.find((x) => x.email.id === alert.emailIds[0]);
+    const d = docs.find((x) => x.email.id === actionEmailId(alert));
     const draft = draftAction(alert, company, d?.ext, d?.email.sender);
     if (!draft) throw new Error("Esta alerta no tiene una acción para preparar.");
     action = { ...draft, id: id("ac", alert.id), createdAt: nowIso() };

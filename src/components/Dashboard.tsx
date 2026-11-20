@@ -4,7 +4,7 @@ import type { PulsoState } from "@/lib/state";
 import { Badge, Button, Card, PulseIcon, SectionTitle, colones, fecha, type Tone } from "./ui";
 import { EvidenceModal, EmailModal, DraftModal } from "./Modals";
 import { Phone } from "./Phone";
-import { BarChart, CATEGORY_COLOR, Donut, KpiCard, STATUS_COLOR, colonesShort } from "./Charts";
+import { BarChart, CATEGORY_COLOR, Donut, KpiCard, METHOD_COLOR, STATUS_COLOR, colonesShort } from "./Charts";
 
 type AlertView = PulsoState["alerts"][number];
 type DocView = PulsoState["documents"][number];
@@ -97,6 +97,11 @@ export function Dashboard() {
   const receivableTotal = state.receivables.reduce((t, r) => t + (r.amount ?? 0), 0);
   const receivableOverdue = state.receivables.filter((r) => r.status === "vencido" || (r.dueDate !== null && r.dueDate < state.today)).reduce((t, r) => t + (r.amount ?? 0), 0);
   const upcomingTotal = state.upcoming.filter((u) => !u.porCobrar).reduce((t, u) => t + (u.amount ?? 0), 0);
+  // Ventas de los últimos 7 días (cierres de caja), y qué parte fue con tarjeta.
+  const weekStart = new Date(Date.parse(state.today + "T00:00:00Z") - 6 * 86_400_000).toISOString().slice(0, 10);
+  const weekSales = state.charts.salesByDay.filter((d) => d.key >= weekStart);
+  const weekSalesTotal = weekSales.reduce((t, d) => t + d.amount, 0);
+  const weekCard = weekSales.reduce((t, d) => t + d.card, 0);
 
   const ingest = (lote: "lote-1" | "lote-2") =>
     act(lote, () => api("/api/ingest", { method: "POST", body: JSON.stringify({ source: "demo", lote }) }),
@@ -224,7 +229,18 @@ export function Dashboard() {
             </Card>
 
             {/* Indicadores (estilo "Company goals") */}
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+              <div className="col-span-2 grid sm:col-span-1">
+                <KpiCard
+                  tint="#008300"
+                  icon={<IconTrend />}
+                  value={colonesShort(weekSalesTotal)}
+                  label="Ventas de la semana"
+                  progress={weekSalesTotal ? (100 * weekCard) / weekSalesTotal : null}
+                  progressLabel={weekSales.length ? `${Math.round((100 * weekCard) / weekSalesTotal)} % con tarjeta · ${weekSales.length} cierres` : "sin cierres de caja"}
+                  onClick={() => setView("plata")}
+                />
+              </div>
               <KpiCard
                 tint="#2a78d6"
                 icon={<IconWallet />}
@@ -299,6 +315,32 @@ export function Dashboard() {
             <Card>
               <SectionTitle aside={<span className="text-xs text-muted">sin contar lo ya pagado</span>}>Lo que vence, por semana</SectionTitle>
               <BarChart data={state.charts.dueByWeek} empty="No tenés nada pendiente de pagar. ✅" />
+            </Card>
+
+            <Card>
+              <SectionTitle aside={<span className="text-xs text-muted">de tus cierres de caja</span>}>Tus ventas</SectionTitle>
+              {state.charts.salesByDay.length === 0 ? (
+                <p className="text-sm text-muted">Cuando lleguen los cierres de caja de tu sistema de facturación, vas a ver aquí lo que vendés cada día.</p>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_220px]">
+                  <BarChart
+                    data={state.charts.salesByDay}
+                    color="#008300"
+                    detail={(d) => {
+                      const day = state.charts.salesByDay.find((x) => x.key === d.key)!;
+                      return `${day.count} facturas · tarjeta ${colonesShort(day.card)} · efectivo ${colonesShort(day.cash)} · SINPE ${colonesShort(day.sinpe)}`;
+                    }}
+                  />
+                  <Donut
+                    title="Cómo te pagan"
+                    slices={state.charts.salesByMethod}
+                    colors={METHOD_COLOR}
+                    measure="amount"
+                    center={colonesShort(state.charts.salesByMethod.reduce((t, m) => t + m.amount, 0))}
+                    centerLabel="vendido"
+                  />
+                </div>
+              )}
             </Card>
 
             </>)}
@@ -641,6 +683,7 @@ const IconChart = () => <Svg d="M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H
 const IconWallet = () => <Svg d="M3 7h15a3 3 0 0 1 3 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-3v3M16 13h2" />;
 const IconHand = () => <Svg d="M4 14h3l4 3h5a2 2 0 0 0 0-4h-4M7 14V9l5-4 5 4M2 20h20" />;
 const IconAlert = () => <Svg d="M12 3l10 18H2zM12 10v5M12 18h.01" />;
+const IconTrend = () => <Svg d="M3 17l6-6 4 4 8-8M15 7h6v6" />;
 const IconCalendar = () => <Svg d="M4 6h16v15H4zM4 10h16M9 3v4M15 3v4" />;
 
 const NAV: { key: View; label: string; icon: ReactNode }[] = [

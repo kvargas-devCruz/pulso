@@ -1,0 +1,15 @@
+{
+  "id": "lote-1-40",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "Banco Horizonte <cierres@bancohorizonte.test>",
+  "fecha": "2026-11-13T22:58:00-06:00",
+  "asunto": "Cierre de lote datáfono 13/11/2026",
+  "cuerpo": "Estimado comercio:\n\nEl cierre del lote 0413 de su datáfono del 13/11/2026 se procesó con éxito.\n\nTransacciones: 19\nMonto bruto: ₡444 100\nComisión: ₡11 102\nNeto a depositar: ₡432 998\n\nEl depósito se acredita el siguiente día hábil.\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": [
+    {
+      "nombre": "cierre-lote-0413.csv",
+      "tipo": "text/csv",
+      "contenido": "fecha,lote,transacciones,monto_bruto,comision,neto_depositar\n2026-11-13,0413,19,444100.00,11102.00,432998.00\n"
+    }
+  ]
+}

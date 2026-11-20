@@ -20,7 +20,7 @@ function anthropic(): Anthropic {
 }
 
 const Schema = z.object({
-  category: z.enum(["hacienda", "ccss", "ins", "bancos", "proveedores", "clientes", "contador", "ruido"]),
+  category: z.enum(["hacienda", "ccss", "ins", "bancos", "proveedores", "clientes", "contador", "ventas", "ruido"]),
   kind: z.enum(["aviso", "cobro", "solicitud", "pago_recibido", "cobro_pendiente", "ruido"]),
   counterparty: z.string().nullable(),
   amount: z.number().nullable(),
@@ -34,7 +34,8 @@ const Schema = z.object({
 
 const SYSTEM = `Sos el extractor de Pulso, un agente que lee el correo de una pyme de Costa Rica.
 Recibís UN correo sin factura XML. Devolvé SOLO un objeto JSON con estos campos:
-- category: hacienda | ccss | ins | bancos | proveedores | clientes | contador | ruido
+- category: hacienda | ccss | ins | bancos | proveedores | clientes | contador | ventas | ruido
+  (ventas = cierres de caja o del datáfono y reportes de ventas del día; usá kind "aviso" y status "informativo")
   (clientes = alguien que le debe o le pagó a la empresa; proveedores = alguien a quien la empresa le compra o le debe;
    ruido = promociones, boletines, publicidad)
 - kind: aviso | cobro | solicitud | pago_recibido | cobro_pendiente | ruido

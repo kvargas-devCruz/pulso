@@ -519,6 +519,240 @@
       "estado": "informativo"
     },
     {
+      "id": "lote-1-37",
+      "lote": "lote-1",
+      "asunto": "Cierre de caja 12/11/2026 · Ferretería El Roble S.A.",
+      "categoria": "ventas",
+      "tipo": "cierre_ventas",
+      "contraparte": "FacturaÁgil",
+      "monto": 896250.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-12",
+        "efectivo": 377750,
+        "tarjeta": 402000,
+        "sinpe": 116500,
+        "total": 896250
+      }
+    },
+    {
+      "id": "lote-1-38",
+      "lote": "lote-1",
+      "asunto": "Cierre de lote datáfono 12/11/2026",
+      "categoria": "ventas",
+      "tipo": "cierre_datafono",
+      "contraparte": "Banco Horizonte",
+      "monto": 402000.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-12",
+        "tarjeta": 402000,
+        "comision": 10050,
+        "neto": 391950
+      }
+    },
+    {
+      "id": "lote-1-39",
+      "lote": "lote-1",
+      "asunto": "Cierre de caja 13/11/2026 · Ferretería El Roble S.A.",
+      "categoria": "ventas",
+      "tipo": "cierre_ventas",
+      "contraparte": "FacturaÁgil",
+      "monto": 940350.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-13",
+        "efectivo": 313750,
+        "tarjeta": 444100,
+        "sinpe": 182500,
+        "total": 940350
+      }
+    },
+    {
+      "id": "lote-1-40",
+      "lote": "lote-1",
+      "asunto": "Cierre de lote datáfono 13/11/2026",
+      "categoria": "ventas",
+      "tipo": "cierre_datafono",
+      "contraparte": "Banco Horizonte",
+      "monto": 444100.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-13",
+        "tarjeta": 444100,
+        "comision": 11102,
+        "neto": 432998
+      }
+    },
+    {
+      "id": "lote-1-41",
+      "lote": "lote-1",
+      "asunto": "Cierre de caja 16/11/2026 · Ferretería El Roble S.A.",
+      "categoria": "ventas",
+      "tipo": "cierre_ventas",
+      "contraparte": "FacturaÁgil",
+      "monto": 768850.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-16",
+        "efectivo": 223750,
+        "tarjeta": 389600,
+        "sinpe": 155500,
+        "total": 768850
+      }
+    },
+    {
+      "id": "lote-1-42",
+      "lote": "lote-1",
+      "asunto": "Cierre de lote datáfono 16/11/2026",
+      "categoria": "ventas",
+      "tipo": "cierre_datafono",
+      "contraparte": "Banco Horizonte",
+      "monto": 389600.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-16",
+        "tarjeta": 389600,
+        "comision": 9740,
+        "neto": 379860
+      }
+    },
+    {
+      "id": "lote-1-43",
+      "lote": "lote-1",
+      "asunto": "Cierre de caja 17/11/2026 · Ferretería El Roble S.A.",
+      "categoria": "ventas",
+      "tipo": "cierre_ventas",
+      "contraparte": "FacturaÁgil",
+      "monto": 866550.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-17",
+        "efectivo": 369750,
+        "tarjeta": 412300,
+        "sinpe": 84500,
+        "total": 866550
+      }
+    },
+    {
+      "id": "lote-1-44",
+      "lote": "lote-1",
+      "asunto": "Cierre de lote datáfono 17/11/2026",
+      "categoria": "ventas",
+      "tipo": "cierre_datafono",
+      "contraparte": "Banco Horizonte",
+      "monto": 367300.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-17",
+        "tarjeta": 367300,
+        "comision": 9182,
+        "neto": 358118
+      }
+    },
+    {
+      "id": "lote-1-45",
+      "lote": "lote-1",
+      "asunto": "Cierre de caja 18/11/2026 · Ferretería El Roble S.A.",
+      "categoria": "ventas",
+      "tipo": "cierre_ventas",
+      "contraparte": "FacturaÁgil",
+      "monto": 627300.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-18",
+        "efectivo": 236000,
+        "tarjeta": 289300,
+        "sinpe": 102000,
+        "total": 627300
+      }
+    },
+    {
+      "id": "lote-1-46",
+      "lote": "lote-1",
+      "asunto": "Cierre de lote datáfono 18/11/2026",
+      "categoria": "ventas",
+      "tipo": "cierre_datafono",
+      "contraparte": "Banco Horizonte",
+      "monto": 289300.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-18",
+        "tarjeta": 289300,
+        "comision": 7232,
+        "neto": 282068
+      }
+    },
+    {
+      "id": "lote-1-47",
+      "lote": "lote-1",
+      "asunto": "Cierre de caja 19/11/2026 · Ferretería El Roble S.A.",
+      "categoria": "ventas",
+      "tipo": "cierre_ventas",
+      "contraparte": "FacturaÁgil",
+      "monto": 982100.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-19",
+        "efectivo": 359500,
+        "tarjeta": 474600,
+        "sinpe": 148000,
+        "total": 982100
+      }
+    },
+    {
+      "id": "lote-1-48",
+      "lote": "lote-1",
+      "asunto": "Cierre de lote datáfono 19/11/2026",
+      "categoria": "ventas",
+      "tipo": "cierre_datafono",
+      "contraparte": "Banco Horizonte",
+      "monto": 474600.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado": "informativo",
+      "fuente_monto": "archivo",
+      "cierre": {
+        "fecha": "2026-11-19",
+        "tarjeta": 474600,
+        "comision": 11865,
+        "neto": 462735
+      }
+    },
+    {
       "id": "lote-2-01",
       "lote": "lote-2",
       "asunto": "Factura electrónica 00100001010000001003 - Distribuidora Ferretera del Valle S.A.",
@@ -631,6 +865,17 @@
       "monto_en_riesgo": 560000,
       "razon": "Cobro pendiente a cliente, vencido el 04/11/2026.",
       "nota": "Es dinero POR COBRAR."
+    },
+    {
+      "tipo": "cierre_descuadre",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-43",
+        "lote-1-44"
+      ],
+      "monto_en_riesgo": 45000,
+      "razon": "El cierre de caja registra ₡412 300 en ventas con tarjeta el 17/11/2026, pero el datáfono cobró ₡367 300: faltan ₡45 000.",
+      "nota": "Los otros 5 días cuadran."
     }
   ],
   "semaforo": {

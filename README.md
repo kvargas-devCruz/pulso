@@ -19,7 +19,7 @@
 ### Qué hace hoy
 - **Semáforo de salud** (verde, amarillo o rojo) con lo vencido, lo que no cuadra, lo que vence en 7 días y el dinero en riesgo.
 - **Lee las facturas electrónicas del XML con código** (montos exactos) y la **respuesta de Hacienda** (aceptada / rechazada / sin respuesta).
-- **Detecta riesgos con reglas explícitas y nivel de confianza:** posible duplicado (exacto o probable), monto fuera de lo normal según el historial del proveedor, cobro sin factura, factura rechazada por Hacienda y vencidos (por pagar y por cobrar).
+- **Detecta riesgos con reglas explícitas y nivel de confianza:** posible duplicado (exacto o probable), monto fuera de lo normal según el historial del proveedor, cobro sin factura, factura rechazada por Hacienda, vencidos (por pagar y por cobrar) y **cierre que no cuadra** (las ventas con tarjeta del cierre de caja contra el cierre del datáfono del mismo día).
 - **Evidencia lado a lado:** los dos documentos comparados, el historial del proveedor, la regla aplicada.
 - **WhatsApp:** alerta agrupada; respondés **1** (preparar correo), **2** (es normal) o **VER** (detalle).
 - **Aprende de tus decisiones:** "es normal" crea una regla acotada al proveedor; los casos parecidos quedan en gris sin molestar. Nunca aprende a ignorar un rechazo de Hacienda.
@@ -47,7 +47,7 @@ npm run dev            # http://localhost:3000
 En el panel, tocá **"Probar con la bandeja de prueba"** (Ferretería El Roble S.A., empresa ficticia).
 
 ### Guion de la demo
-1. **Probar con la bandeja de prueba** → semáforo en rojo, bitácora y 7 riesgos.
+1. **Probar con la bandeja de prueba** → semáforo en rojo, bitácora y 8 riesgos (incluye el cierre del datáfono del 17/11 que no cuadra).
 2. En "Monto fuera de lo normal" de **Maderas El Pinar**, tocá **Es normal** (temporada navideña).
 3. Tocá **📩 Llegó un correo nuevo** → aparece el **posible duplicado** de Distribuidora del Valle y llega la alerta al WhatsApp.
 4. **Ver evidencia** → las dos facturas lado a lado (misma clave, mismo consecutivo).
@@ -67,7 +67,7 @@ Copiá `.env.example` a `.env.local` y completá lo que quieras usar:
 | `APP_URL` | Links dentro de los mensajes de WhatsApp | `http://localhost:3000` |
 | `PULSO_TODAY` | Fijar el "hoy" (la demo usa 2026-11-20) | Fecha actual de Costa Rica |
 
-**Supabase:** en el SQL Editor de tu proyecto (**New → Snippet**, vacío) pegá y ejecutá `supabase/migrations/0001_init.sql`. Incluye los `grant` que los proyectos nuevos de Supabase ya no dan solos a la Data API. Para comprobar que el Store de Supabase funciona: `npm run eval:supabase` (usa `.env.local` y una empresa de eval aparte).
+**Supabase:** en el SQL Editor de tu proyecto (**New → Snippet**, vacío) pegá y ejecutá `supabase/migrations/0001_init.sql` y después `0002_cierres.sql` (cada una en su propio Snippet). Incluye los `grant` que los proyectos nuevos de Supabase ya no dan solos a la Data API. Para comprobar que el Store de Supabase funciona: `npm run eval:supabase` (usa `.env.local` y una empresa de eval aparte).
 **WhatsApp (Twilio Sandbox):** uní tu celular al sandbox y configurá el webhook "When a message comes in" a `https://TU-APP/api/whatsapp/webhook` (POST).
 
 ### Pruebas
@@ -81,7 +81,7 @@ npm run build    # compilación de producción
 Resultado actual de `npm run eval` (sin Claude):
 ```
 Extracción (lote 1): categoría, tipo, monto, vencimiento, estado y Hacienda: 100 %
-Alertas: 8/8 plantadas detectadas · 0 falsos positivos
+Alertas: 9/9 plantadas detectadas · 0 falsos positivos
 Aprendizaje: la factura de temporada del lote 2 quedó como normal_aprendido
 ```
 > Honestidad sobre esa cifra: las facturas y su estado en Hacienda se leen del XML (exacto). Para los correos sin XML, la heurística se escribió conociendo la bandeja de prueba, así que el 100 % mide que el flujo funciona, no la precisión con correos reales. Con correos reales, la extracción de texto la hace Claude (`ANTHROPIC_API_KEY`); medir eso con correos reales del restaurante es el siguiente paso.
@@ -94,7 +94,7 @@ Aprendizaje: la factura de temporada del lote 2 quedó como normal_aprendido
 
 **Flujo de trabajo:**
 1. **Criterio primero.** Antes de escribir código definí el producto en [`PRD.md`](PRD.md), las decisiones técnicas en [`docs/adr/`](docs/adr/) y las reglas para el agente en [`CLAUDE.md`](CLAUDE.md).
-2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 38 correos ficticios con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
+2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 50 correos ficticios con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
 3. **Construcción por bloques**, cada uno verificado con build, pruebas y eval antes de seguir (ver [`docs/bitacora-hackathon.md`](docs/bitacora-hackathon.md)).
 4. **Revisión visual:** el agente abrió el panel en un navegador sin interfaz, ejecutó el flujo completo de la demo y revisó capturas de escritorio y celular (así encontró y corrigió un desborde horizontal en el celular).
 5. **Revisión humana** de cada decisión contra el PRD y los ADRs.

@@ -33,6 +33,7 @@ export type Category =
   | "proveedores"
   | "clientes"
   | "contador"
+  | "ventas"
   | "ruido";
 
 export type ItemKind =
@@ -42,11 +43,13 @@ export type ItemKind =
   | "solicitud"
   | "pago_recibido"
   | "cobro_pendiente"
+  | "cierre_datafono"
+  | "cierre_ventas"
   | "ruido";
 
 export type ItemStatus = "pendiente" | "pagado" | "vencido" | "informativo";
 export type HaciendaStatus = "aceptado" | "rechazado" | "sin_respuesta";
-export type AmountSource = "xml" | "ia" | "heuristica";
+export type AmountSource = "xml" | "archivo" | "ia" | "heuristica";
 
 /** Datos de una factura electrónica leídos del XML con código (ADR-0002). */
 export interface InvoiceData {
@@ -64,6 +67,22 @@ export interface InvoiceData {
   tax: number;
   total: number;
   lines: { detail: string; quantity: number; unitPrice: number; total: number }[];
+}
+
+/** Cierre diario leído con código (CSV adjunto) o del texto del correo. */
+export interface SettlementData {
+  source: "datafono" | "facturacion";
+  date: string; // YYYY-MM-DD
+  card: number; // con tarjeta (datáfono: monto bruto)
+  cash: number | null;
+  sinpe: number | null;
+  total: number;
+  commission: number | null;
+  deposit: number | null;
+  transactions: number | null;
+  invoices: number | null;
+  batch: string | null;
+  fromFile: boolean; // true = CSV adjunto (exacto); false = texto del correo
 }
 
 export interface HaciendaMessage {
@@ -91,6 +110,7 @@ export interface Extraction {
   doubtfulFields: string[];
   requestedDocuments: string[];
   extractedBy: "codigo" | "claude" | "heuristica";
+  settlement?: SettlementData | null;
 }
 
 export type AlertType =
@@ -98,7 +118,8 @@ export type AlertType =
   | "monto_inusual"
   | "cobro_sin_factura"
   | "rechazo_hacienda"
-  | "vencido";
+  | "vencido"
+  | "cierre_descuadre";
 
 export type Confidence = "alta" | "media" | "baja";
 
@@ -138,7 +159,7 @@ export interface LearnedRule {
   alertType: Exclude<AlertType, "rechazo_hacienda">;
   counterpartyTaxId: string | null;
   counterparty: string | null;
-  condition: { maxRatio?: number; amount?: number; emailId?: string };
+  condition: { maxRatio?: number; amount?: number; emailId?: string; maxDiff?: number };
   reason: string;
   createdFrom: "panel" | "whatsapp";
   sourceAlertId: string;

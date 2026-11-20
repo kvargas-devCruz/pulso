@@ -82,6 +82,56 @@ export function EvidenceModal({ alert, onClose, onOpenEmail }: { alert: AlertVie
         </div>
       )}
 
+      {alert.type === "cierre_descuadre" && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {ids.map((id) => {
+            const e = emails[id];
+            const st = e?.extraction?.settlement;
+            const Row = ({ label, value, hl }: { label: string; value: string; hl?: boolean }) => (
+              <div className={`flex justify-between gap-3 rounded-md px-2 py-1 ${hl ? "bg-red-soft font-semibold" : ""}`}>
+                <dt className={hl ? "" : "text-muted"}>{label}</dt><dd className="text-right tabular">{value}</dd>
+              </div>
+            );
+            return (
+              <div key={id} className="rounded-xl border border-line p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{st?.source === "datafono" ? "Cierre del datáfono" : "Cierre de caja"} · {e?.extraction?.counterparty ?? ""}</span>
+                  <Button variant="ghost" onClick={() => onOpenEmail(id)}>Abrir correo</Button>
+                </div>
+                {st ? (
+                  <dl className="space-y-0.5 text-sm">
+                    <Row label="Fecha" value={fecha(st.date)} />
+                    {st.source === "datafono" ? (
+                      <>
+                        {st.batch && <Row label="Lote" value={st.batch} />}
+                        {st.transactions !== null && <Row label="Transacciones" value={String(st.transactions)} />}
+                        <Row label="Cobrado con tarjeta" value={colones(st.card)} hl />
+                        {st.commission !== null && <Row label="Comisión" value={colones(st.commission)} />}
+                        {st.deposit !== null && <Row label="Neto a depositar" value={colones(st.deposit)} />}
+                      </>
+                    ) : (
+                      <>
+                        {st.invoices !== null && <Row label="Facturas emitidas" value={String(st.invoices)} />}
+                        <Row label="Efectivo" value={colones(st.cash)} />
+                        <Row label="Ventas con tarjeta" value={colones(st.card)} hl />
+                        <Row label="SINPE Móvil" value={colones(st.sinpe)} />
+                        <Row label="Total vendido" value={colones(st.total)} />
+                      </>
+                    )}
+                    <p className="pt-1 text-xs text-muted">{st.fromFile ? "Leído del archivo CSV adjunto (exacto)." : "Leído del texto del correo: confirmalo."}</p>
+                  </dl>
+                ) : <p className="text-sm text-muted">Cargando…</p>}
+              </div>
+            );
+          })}
+          <div className="rounded-xl bg-red-soft p-3 text-sm md:col-span-2">
+            <strong>Diferencia: {colones(alert.amountAtRisk)}</strong>
+            {alert.meta.direction === "faltante" ? " que el datáfono no cobró." : " cobrados con tarjeta sin factura en el cierre de caja."}
+            <span className="text-muted"> En rojo: la línea que se compara (ventas con tarjeta).</span>
+          </div>
+        </div>
+      )}
+
       {(alert.type === "cobro_sin_factura" || alert.type === "vencido") && main && (
         <div className="rounded-xl border border-line p-3 text-sm">
           <div className="mb-1 text-muted">{main.email.sender} · {fecha(main.email.receivedAt)}</div>

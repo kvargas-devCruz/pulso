@@ -1,7 +1,10 @@
 // Extracción: qué entiende Pulso de cada correo.
 // 1) Facturas: XML con código (exacto). 2) Respuesta de Hacienda: XML con código.
-// 3) Resto del correo: Claude si hay API key; si no (o si falla), heurística determinista.
-import type { EmailRecord, Extraction, InvoiceData, HaciendaMessage, Category, ItemKind, ItemStatus } from "../types";
+// 3) Cierres del datáfono y del software de facturación: CSV con código (o sus líneas rotuladas).
+// 4) Resto del correo: Claude si hay API key; si no (o si falla), heurística determinista.
+import type { EmailRecord, Extraction, InvoiceData, HaciendaMessage, Category, ItemKind, ItemStatus, SettlementData } from "../types";
+import { settlementFromEmail } from "./settlement";
+import { colones } from "../format";
 import { isFacturaXml, isMensajeHaciendaXml, parseFactura, parseMensajeHacienda } from "./xml";
 import { extractWithClaude, claudeEnabled } from "./claude";
 
@@ -108,6 +111,34 @@ function invoiceExtraction(
   };
 }
 
+// ------------------------------------------------------------------ cierres
+function settlementExtraction(email: EmailRecord, st: SettlementData): Extraction {
+  const pos = st.source === "datafono";
+  const [y, m, d] = st.date.split("-");
+  return {
+    emailId: email.id,
+    category: "ventas",
+    kind: pos ? "cierre_datafono" : "cierre_ventas",
+    counterparty: senderName(email.sender),
+    counterpartyTaxId: null,
+    amount: pos ? st.card : st.total,
+    currency: "CRC",
+    dueDate: null,
+    status: "informativo",
+    summary: pos
+      ? `Cierre del datáfono del ${d}/${m}/${y}: ${colones(st.card)} con tarjeta${st.deposit !== null ? `, deposita ${colones(st.deposit)}` : ""}`
+      : `Cierre de caja del ${d}/${m}/${y}: vendiste ${colones(st.total)} (tarjeta ${colones(st.card)})`,
+    invoice: null,
+    haciendaStatus: null,
+    haciendaDetail: null,
+    amountSource: st.fromFile ? "archivo" : "heuristica",
+    doubtfulFields: st.fromFile ? [] : ["monto leído del texto del correo"],
+    requestedDocuments: [],
+    extractedBy: st.fromFile ? "codigo" : "heuristica",
+    settlement: st,
+  };
+}
+
 // ------------------------------------------------------------------ heurística
 export function heuristicExtraction(email: EmailRecord, ctx: ExtractContext): Extraction {
   const name = senderName(email.sender);
@@ -196,6 +227,8 @@ export function haciendaMessagesFromEmail(email: EmailRecord): HaciendaMessage[]
 export async function extractEmail(email: EmailRecord, ctx: ExtractContext): Promise<Extraction> {
   const invoice = invoicesFromEmail(email)[0];
   if (invoice) return invoiceExtraction(email, invoice, ctx);
+  const settlement = settlementFromEmail(email);
+  if (settlement) return settlementExtraction(email, settlement);
   if (claudeEnabled()) {
     try {
       const fromClaude = await extractWithClaude(email, ctx);

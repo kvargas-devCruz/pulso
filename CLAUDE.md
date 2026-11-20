@@ -7,9 +7,9 @@ Pulso es un agente que vigila el correo de una pyme costarricense: extrae factur
 
 - Requerimientos: `PRD.md`
 - Decisiones técnicas: `docs/adr/`
-- Datos de prueba: `data/bandeja-prueba/lote-1/` (36 correos ya en el buzón) y `lote-2/` (2 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
+- Datos de prueba: `data/bandeja-prueba/lote-1/` (48 correos ya en el buzón, 12 son cierres del datáfono y de caja) y `lote-2/` (2 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
 - Respuesta esperada: `data/bandeja-prueba/esperado.json` (para `npm run eval`) y `resumen.md` (legible). "Hoy" en la demo es el 20/11/2026.
-- Esquema de la base de datos: `supabase/migrations/0001_init.sql`
+- Esquema de la base de datos: `supabase/migrations/0001_init.sql` y `0002_cierres.sql`
 - Orden de trabajo y prompts por bloque: `docs/PLAYBOOK.md`
 
 Si algo no está claro en el PRD o en los ADRs, preguntá antes de inventar.
@@ -35,6 +35,7 @@ src/
     engine/
       pipeline.ts             # el único flujo central + decisiones (aprobar, normal, WhatsApp)
       xml.ts                  # FacturaElectronica y MensajeHacienda (código, ADR-0002)
+      settlement.ts           # cierres del datáfono y de caja (CSV con código)
       extract.ts              # extracción: XML → Claude → heurística
       claude.ts               # llamadas a Claude con zod; polish() con guardia de números
       rules.ts                # reglas puras con confianza + reglas aprendidas
@@ -73,7 +74,7 @@ docs/                         # adr/, PLAYBOOK.md, bitacora-hackathon.md
 
 ## Pruebas
 - `npm test`: pruebas unitarias (`src/lib/engine/engine.test.ts`).
-- `npm run eval`: procesa `data/bandeja-prueba/` de punta a punta y compara contra `esperado.json` (extracción, alertas, semáforo, aprendizaje). Correrlo después de cambiar el motor o los prompts. Debe quedar 8/8 alertas y 0 falsos positivos.
+- `npm run eval`: procesa `data/bandeja-prueba/` de punta a punta y compara contra `esperado.json` (extracción, alertas, semáforo, aprendizaje). Correrlo después de cambiar el motor o los prompts. Debe quedar 9/9 alertas y 0 falsos positivos.
 - Antes de decir "listo": `npm run build`, `npm test` y `npm run eval`.
 
 ## Prioridad cuando haya que elegir
