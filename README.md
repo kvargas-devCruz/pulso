@@ -2,7 +2,7 @@
 
 **El estado de tu empresa, leído de tu correo.**
 
-> Proyecto del equipo **WildDogs** para el Dojo AI Hackathon (Track 02: Build for Business, noviembre 2026).
+> Proyecto para el Dojo AI Hackathon (Track 02: Build for Business, noviembre 2026).
 
 ---
 

@@ -1,7 +1,7 @@
 # PRD: Pulso
 
 **Producto:** Pulso, el estado de tu empresa, leído de tu correo.
-**Equipo:** WildDogs (Kevin Cruz)
+**Equipo:** Kevin Cruz
 **Evento:** Dojo AI Hackathon, Track 02: Build for Business (20–22 nov 2026)
 **Estado:** alcance congelado el 19/11/2026
 
