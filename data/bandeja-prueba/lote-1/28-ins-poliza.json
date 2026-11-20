@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-28",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "INS Seguros <polizas@ins.test>",
+  "fecha": "2026-11-09T10:44:00-06:00",
+  "asunto": "Renovación póliza de Riesgos del Trabajo",
+  "cuerpo": "Estimado cliente:\n\nSu póliza de Riesgos del Trabajo vence el 30/11/2026. El monto de la renovación es ₡182 400. Puede pagar en línea o en cualquier sede.\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

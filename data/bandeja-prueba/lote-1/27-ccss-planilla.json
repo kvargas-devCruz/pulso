@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-27",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "CCSS - SICERE <sicere@ccss.test>",
+  "fecha": "2026-11-16T10:17:00-06:00",
+  "asunto": "Facturación de planilla noviembre 2026",
+  "cuerpo": "Patrono: Ferretería El Roble S.A.\n\nSe generó la factura de cuotas obrero-patronales del período noviembre 2026 por ₡1 248 750. Fecha límite de pago: 26/11/2026. Evite recargos por mora.\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

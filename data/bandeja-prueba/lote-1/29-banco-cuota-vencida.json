@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-29",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "Banco Horizonte <avisos@bancohorizonte.test>",
+  "fecha": "2026-11-16T10:04:00-06:00",
+  "asunto": "Aviso: cuota de préstamo vencida",
+  "cuerpo": "Estimado cliente:\n\nLe informamos que la cuota N.° 18 de su préstamo comercial por ₡425 000 venció el 15/11/2026 y no registra pago. Para evitar intereses moratorios, realice el pago a la brevedad.\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

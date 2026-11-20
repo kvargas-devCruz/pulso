@@ -1,0 +1,26 @@
+{
+  "id": "lote-1-18",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "Maderas El Pinar S.A. <facturas@maderaselpinar.test>",
+  "fecha": "2026-10-16T09:13:00-06:00",
+  "asunto": "Factura electrónica 00100001010000001687 - Maderas El Pinar S.A.",
+  "cuerpo": "Estimados señores de Ferretería El Roble S.A.:\n\nAdjuntamos la factura electrónica N.° 00100001010000001687 por un total de ₡202 722, de contado.\n\nSaludos cordiales,\nMaderas El Pinar S.A.",
+  "adjuntos": [
+    {
+      "nombre": "FE-00100001010000001687.xml",
+      "tipo": "application/xml",
+      "contenido": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- FICTICIO: datos inventados para la demo de Pulso. Sin firma digital. -->\n<FacturaElectronica xmlns=\"https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronica\">\n  <Clave>50616102600310190020600100001010000001687189022847</Clave>\n  <ProveedorSistemas>3101900206</ProveedorSistemas>\n  <CodigoActividadEmisor>466305</CodigoActividadEmisor>\n  <CodigoActividadReceptor>475201</CodigoActividadReceptor>\n  <NumeroConsecutivo>00100001010000001687</NumeroConsecutivo>\n  <FechaEmision>2026-10-16T08:30:00-06:00</FechaEmision>\n  <Emisor>\n    <Nombre>Maderas El Pinar S.A.</Nombre>\n    <Identificacion><Tipo>02</Tipo><Numero>3101900206</Numero></Identificacion>\n    <CorreoElectronico>facturas@maderaselpinar.test</CorreoElectronico>\n  </Emisor>\n  <Receptor>\n    <Nombre>Ferretería El Roble S.A.</Nombre>\n    <Identificacion><Tipo>02</Tipo><Numero>3101900100</Numero></Identificacion>\n    <CorreoElectronico>facturas@ferreteriaelroble.test</CorreoElectronico>\n  </Receptor>\n  <CondicionVenta>01</CondicionVenta>\n  <PlazoCredito>0</PlazoCredito>\n  <DetalleServicio>\n    <LineaDetalle>\n      <NumeroLinea>1</NumeroLinea>\n      <CodigoCABYS>4120002056836</CodigoCABYS>\n      <Cantidad>92</Cantidad>\n      <UnidadMedida>Unid</UnidadMedida>\n      <Detalle>Tabla de pino 1x10x4 vrs</Detalle>\n      <PrecioUnitario>1950.00</PrecioUnitario>\n      <MontoTotal>179400.00</MontoTotal>\n      <SubTotal>179400.00</SubTotal>\n      <BaseImponible>179400.00</BaseImponible>\n      <Impuesto>\n        <Codigo>01</Codigo>\n        <CodigoTarifaIVA>08</CodigoTarifaIVA>\n        <Tarifa>13.00</Tarifa>\n        <Monto>23322.00</Monto>\n      </Impuesto>\n      <ImpuestoNeto>23322.00</ImpuestoNeto>\n      <MontoTotalLinea>202722.00</MontoTotalLinea>\n    </LineaDetalle>\n  </DetalleServicio>\n  <ResumenFactura>\n    <CodigoTipoMoneda><CodigoMoneda>CRC</CodigoMoneda><TipoCambio>1.00000</TipoCambio></CodigoTipoMoneda>\n    <TotalMercanciasGravadas>179400.00</TotalMercanciasGravadas>\n    <TotalGravado>179400.00</TotalGravado>\n    <TotalVenta>179400.00</TotalVenta>\n    <TotalDescuentos>0.00</TotalDescuentos>\n    <TotalVentaNeta>179400.00</TotalVentaNeta>\n    <TotalImpuesto>23322.00</TotalImpuesto>\n    <MedioPago><TipoMedioPago>04</TipoMedioPago></MedioPago>\n    <TotalComprobante>202722.00</TotalComprobante>\n  </ResumenFactura>\n</FacturaElectronica>\n"
+    },
+    {
+      "nombre": "FE-00100001010000001687.pdf",
+      "tipo": "application/pdf",
+      "contenido": null,
+      "nota": "PDF omitido en la demo; el XML es la fuente de verdad."
+    },
+    {
+      "nombre": "MH-00100001010000001687.xml",
+      "tipo": "application/xml",
+      "contenido": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- FICTICIO: respuesta de Hacienda simulada para la demo de Pulso. -->\n<MensajeHacienda xmlns=\"https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/mensajeHacienda\">\n  <Clave>50616102600310190020600100001010000001687189022847</Clave>\n  <NombreEmisor>Maderas El Pinar S.A.</NombreEmisor>\n  <TipoIdentificacionEmisor>02</TipoIdentificacionEmisor>\n  <NumeroCedulaEmisor>3101900206</NumeroCedulaEmisor>\n  <NombreReceptor>Ferretería El Roble S.A.</NombreReceptor>\n  <TipoIdentificacionReceptor>02</TipoIdentificacionReceptor>\n  <NumeroCedulaReceptor>3101900100</NumeroCedulaReceptor>\n  <Mensaje>1</Mensaje>\n  <DetalleMensaje>Aceptado</DetalleMensaje>\n  <MontoTotalImpuesto>23322.00</MontoTotalImpuesto>\n  <TotalFactura>202722.00</TotalFactura>\n</MensajeHacienda>\n"
+    }
+  ]
+}

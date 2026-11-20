@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-26",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "TRIBU-CR <no-responder@hacienda.test>",
+  "fecha": "2026-11-06T10:01:00-06:00",
+  "asunto": "Tiene un nuevo mensaje en su buzón de TRIBU-CR",
+  "cuerpo": "Estimado contribuyente:\n\nTiene un nuevo mensaje en su buzón de la Oficina Virtual. Ingrese a TRIBU-CR para revisarlo.\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-35",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "Cámara de Comercio Ficticia <boletin@camaraficticia.test>",
+  "fecha": "2026-11-11T10:24:00-06:00",
+  "asunto": "Boletín semanal de comercio",
+  "cuerpo": "Contenido promocional. (FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

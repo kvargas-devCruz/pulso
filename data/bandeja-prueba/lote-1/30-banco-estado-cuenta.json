@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-30",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "Banco Horizonte <estados@bancohorizonte.test>",
+  "fecha": "2026-11-02T10:11:00-06:00",
+  "asunto": "Su estado de cuenta de octubre está disponible",
+  "cuerpo": "Estimado cliente:\n\nSu estado de cuenta de la cuenta corriente terminada en 4417, correspondiente a octubre 2026, ya está disponible en Banca en Línea.\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

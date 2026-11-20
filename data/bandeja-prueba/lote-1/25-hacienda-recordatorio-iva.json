@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-25",
+  "para": "facturas@ferreteriaelroble.test",
+  "remitente": "Ministerio de Hacienda <notificaciones@hacienda.test>",
+  "fecha": "2026-11-18T10:16:00-06:00",
+  "asunto": "Recordatorio: declaración del IVA de noviembre",
+  "cuerpo": "Estimado contribuyente:\n\nLe recordamos que la declaración y el pago del Impuesto al Valor Agregado (formulario 150) del período noviembre 2026 vencen el 15 de diciembre de 2026. Realice su gestión en TRIBU-CR.\n\nEste es un mensaje automático. (FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

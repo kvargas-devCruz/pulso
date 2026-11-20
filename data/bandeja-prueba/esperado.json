@@ -1,0 +1,657 @@
+{
+  "empresa": {
+    "nombre": "Ferretería El Roble S.A.",
+    "cedula": "3101900100",
+    "correo": "facturas@ferreteriaelroble.test"
+  },
+  "hoy": "2026-11-20",
+  "correos": [
+    {
+      "id": "lote-1-01",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001001 - Distribuidora Ferretera del Valle S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Distribuidora Ferretera del Valle S.A.",
+      "numero": "00100001010000001001",
+      "clave": "50615102600310190020100100001010000001001159516578",
+      "monto": 171760.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-02",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001002 - Distribuidora Ferretera del Valle S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Distribuidora Ferretera del Valle S.A.",
+      "numero": "00100001010000001002",
+      "clave": "50629102600310190020100100001010000001002128578414",
+      "monto": 165827.5,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-03",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001003 - Distribuidora Ferretera del Valle S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Distribuidora Ferretera del Valle S.A.",
+      "numero": "00100001010000001003",
+      "clave": "50605112600310190020100100001010000001003156960269",
+      "monto": 184190.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-05",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-04",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001138 - Cementos y Agregados Tres Ríos S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Cementos y Agregados Tres Ríos S.A.",
+      "numero": "00100001010000001138",
+      "clave": "50608102600310190020200100001010000001138162681867",
+      "monto": 147917.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-05",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001139 - Cementos y Agregados Tres Ríos S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Cementos y Agregados Tres Ríos S.A.",
+      "numero": "00100001010000001139",
+      "clave": "50622102600310190020200100001010000001139121036343",
+      "monto": 141193.5,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-06",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001140 - Cementos y Agregados Tres Ríos S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Cementos y Agregados Tres Ríos S.A.",
+      "numero": "00100001010000001140",
+      "clave": "50604112600310190020200100001010000001140140115833",
+      "monto": 154640.5,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-07",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001141 - Cementos y Agregados Tres Ríos S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Cementos y Agregados Tres Ríos S.A.",
+      "numero": "00100001010000001141",
+      "clave": "50617112600310190020200100001010000001141115597937",
+      "monto": 416857.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-17",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-08",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001275 - Pinturas Arcoíris de Costa Rica S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Pinturas Arcoíris de Costa Rica S.A.",
+      "numero": "00100001010000001275",
+      "clave": "50612102600310190020300100001010000001275153873447",
+      "monto": 98988.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-09",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001276 - Pinturas Arcoíris de Costa Rica S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Pinturas Arcoíris de Costa Rica S.A.",
+      "numero": "00100001010000001276",
+      "clave": "50626102600310190020300100001010000001276192588382",
+      "monto": 82490.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-10",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001277 - Pinturas Arcoíris de Costa Rica S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Pinturas Arcoíris de Costa Rica S.A.",
+      "numero": "00100001010000001277",
+      "clave": "50610112600310190020300100001010000001277173530403",
+      "monto": 96050.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-10",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-11",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001278 - Pinturas Arcoíris de Costa Rica S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Pinturas Arcoíris de Costa Rica S.A.",
+      "numero": "00100001010000001278",
+      "clave": "50613112600310190020300100001010000001278130920600",
+      "monto": 96050.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-13",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-12",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001412 - Eléctricos Volta S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Eléctricos Volta S.A.",
+      "numero": "00100001010000001412",
+      "clave": "50609102600310190020400100001010000001412197850508",
+      "monto": 124300.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-13",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001413 - Eléctricos Volta S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Eléctricos Volta S.A.",
+      "numero": "00100001010000001413",
+      "clave": "50630102600310190020400100001010000001413182257234",
+      "monto": 93225.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-14",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001414 - Eléctricos Volta S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Eléctricos Volta S.A.",
+      "numero": "00100001010000001414",
+      "clave": "50612112600310190020400100001010000001414142369084",
+      "monto": 109610.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-12",
+      "estado_hacienda": "rechazado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-15",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001549 - Tornillería Central S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Tornillería Central S.A.",
+      "numero": "00100001010000001549",
+      "clave": "50620102600310190020500100001010000001549136607072",
+      "monto": 66105.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-16",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001550 - Tornillería Central S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Tornillería Central S.A.",
+      "numero": "00100001010000001550",
+      "clave": "50618112600310190020500100001010000001550100463934",
+      "monto": 70512.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-18",
+      "estado_hacienda": "sin_respuesta",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-17",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001686 - Maderas El Pinar S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Maderas El Pinar S.A.",
+      "numero": "00100001010000001686",
+      "clave": "50618092600310190020600100001010000001686161642180",
+      "monto": 198315.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-18",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001687 - Maderas El Pinar S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Maderas El Pinar S.A.",
+      "numero": "00100001010000001687",
+      "clave": "50616102600310190020600100001010000001687189022847",
+      "monto": 202722.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-19",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001688 - Maderas El Pinar S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Maderas El Pinar S.A.",
+      "numero": "00100001010000001688",
+      "clave": "50614112600310190020600100001010000001688177741078",
+      "monto": 363577.5,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-14",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-20",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001823 - Servicios de Limpieza Brillo S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Servicios de Limpieza Brillo S.A.",
+      "numero": "00100001010000001823",
+      "clave": "50601102600310190020700100001010000001823108428494",
+      "monto": 94920.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-21",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001824 - Servicios de Limpieza Brillo S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Servicios de Limpieza Brillo S.A.",
+      "numero": "00100001010000001824",
+      "clave": "50601112600310190020700100001010000001824144162685",
+      "monto": 94920.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-01",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-22",
+      "lote": "lote-1",
+      "asunto": "Factura electrónica 00100001010000001960 - Contadores Asociados Mora & Solís",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Contadores Asociados Mora & Solís",
+      "numero": "00100001010000001960",
+      "clave": "50603112600310290020800100001010000001960157419363",
+      "monto": 84750.0,
+      "moneda": "CRC",
+      "vencimiento": null,
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pagado (contado)"
+    },
+    {
+      "id": "lote-1-23",
+      "lote": "lote-1",
+      "asunto": "Documentos pendientes para el cierre de octubre",
+      "categoria": "contador",
+      "tipo": "solicitud",
+      "contraparte": "Contadores Asociados Mora & Solís",
+      "monto": null,
+      "vencimiento": "2026-11-25",
+      "estado": "pendiente",
+      "documentos_pedidos": [
+        "estado de cuenta octubre",
+        "comprobantes ventas efectivo octubre",
+        "contrato alquiler bodega"
+      ]
+    },
+    {
+      "id": "lote-1-24",
+      "lote": "lote-1",
+      "asunto": "IVA de octubre presentado",
+      "categoria": "contador",
+      "tipo": "aviso",
+      "contraparte": "Contadores Asociados Mora & Solís",
+      "monto": 612300,
+      "vencimiento": null,
+      "estado": "pagado"
+    },
+    {
+      "id": "lote-1-25",
+      "lote": "lote-1",
+      "asunto": "Recordatorio: declaración del IVA de noviembre",
+      "categoria": "hacienda",
+      "tipo": "aviso",
+      "contraparte": "Ministerio de Hacienda",
+      "monto": null,
+      "vencimiento": "2026-12-15",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-26",
+      "lote": "lote-1",
+      "asunto": "Tiene un nuevo mensaje en su buzón de TRIBU-CR",
+      "categoria": "hacienda",
+      "tipo": "aviso",
+      "contraparte": "Ministerio de Hacienda",
+      "monto": null,
+      "vencimiento": null,
+      "estado": "informativo"
+    },
+    {
+      "id": "lote-1-27",
+      "lote": "lote-1",
+      "asunto": "Facturación de planilla noviembre 2026",
+      "categoria": "ccss",
+      "tipo": "cobro",
+      "contraparte": "CCSS",
+      "monto": 1248750,
+      "vencimiento": "2026-11-26",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-28",
+      "lote": "lote-1",
+      "asunto": "Renovación póliza de Riesgos del Trabajo",
+      "categoria": "ins",
+      "tipo": "cobro",
+      "contraparte": "INS",
+      "monto": 182400,
+      "vencimiento": "2026-11-30",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-29",
+      "lote": "lote-1",
+      "asunto": "Aviso: cuota de préstamo vencida",
+      "categoria": "bancos",
+      "tipo": "cobro",
+      "contraparte": "Banco Horizonte",
+      "monto": 425000,
+      "vencimiento": "2026-11-15",
+      "estado": "vencido"
+    },
+    {
+      "id": "lote-1-30",
+      "lote": "lote-1",
+      "asunto": "Su estado de cuenta de octubre está disponible",
+      "categoria": "bancos",
+      "tipo": "aviso",
+      "contraparte": "Banco Horizonte",
+      "monto": null,
+      "vencimiento": null,
+      "estado": "informativo"
+    },
+    {
+      "id": "lote-1-31",
+      "lote": "lote-1",
+      "asunto": "Pago pendiente mercadería",
+      "categoria": "proveedores",
+      "tipo": "cobro",
+      "contraparte": "Suministros Rápidos CR",
+      "monto": 310000,
+      "vencimiento": null,
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-1-32",
+      "lote": "lote-1",
+      "asunto": "Comprobante de pago factura 00100001010000000231",
+      "categoria": "clientes",
+      "tipo": "pago_recibido",
+      "contraparte": "Constructora Altamira",
+      "monto": 236500,
+      "vencimiento": null,
+      "estado": "pagado"
+    },
+    {
+      "id": "lote-1-33",
+      "lote": "lote-1",
+      "asunto": "RE: Factura 00100001010000000245",
+      "categoria": "clientes",
+      "tipo": "cobro_pendiente",
+      "contraparte": "Condominio Las Lomas",
+      "monto": 560000,
+      "vencimiento": "2026-11-04",
+      "estado": "vencido",
+      "nota": "Dinero que le DEBEN a la empresa (por cobrar), no que debe."
+    },
+    {
+      "id": "lote-1-34",
+      "lote": "lote-1",
+      "asunto": "🔥 Black Friday: 40% en herramientas eléctricas",
+      "categoria": "ruido",
+      "tipo": "ruido",
+      "contraparte": null,
+      "monto": null,
+      "vencimiento": null,
+      "estado": "informativo"
+    },
+    {
+      "id": "lote-1-35",
+      "lote": "lote-1",
+      "asunto": "Boletín semanal de comercio",
+      "categoria": "ruido",
+      "tipo": "ruido",
+      "contraparte": null,
+      "monto": null,
+      "vencimiento": null,
+      "estado": "informativo"
+    },
+    {
+      "id": "lote-1-36",
+      "lote": "lote-1",
+      "asunto": "Webinar gratis: vendé más en Instagram",
+      "categoria": "ruido",
+      "tipo": "ruido",
+      "contraparte": null,
+      "monto": null,
+      "vencimiento": null,
+      "estado": "informativo"
+    },
+    {
+      "id": "lote-2-01",
+      "lote": "lote-2",
+      "asunto": "Factura electrónica 00100001010000001003 - Distribuidora Ferretera del Valle S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Distribuidora Ferretera del Valle S.A.",
+      "numero": "00100001010000001003",
+      "clave": "50605112600310190020100100001010000001003156960269",
+      "monto": 184190.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-05",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    },
+    {
+      "id": "lote-2-02",
+      "lote": "lote-2",
+      "asunto": "Factura electrónica 00100001010000001689 - Maderas El Pinar S.A.",
+      "categoria": "proveedores",
+      "tipo": "factura",
+      "contraparte": "Maderas El Pinar S.A.",
+      "numero": "00100001010000001689",
+      "clave": "50620112600310190020600100001010000001689183585333",
+      "monto": 440700.0,
+      "moneda": "CRC",
+      "vencimiento": "2026-12-20",
+      "estado_hacienda": "aceptado",
+      "fuente_monto": "xml",
+      "estado": "pendiente"
+    }
+  ],
+  "alertas": [
+    {
+      "tipo": "duplicado",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-03",
+        "lote-2-01"
+      ],
+      "monto_en_riesgo": 184190.0,
+      "razon": "Mismo emisor y mismo número consecutivo (misma clave numérica).",
+      "nota": "Aparece al procesar el lote 2. Es la alerta del flujo principal de la demo."
+    },
+    {
+      "tipo": "duplicado",
+      "confianza": "media",
+      "correos": [
+        "lote-1-10",
+        "lote-1-11"
+      ],
+      "monto_en_riesgo": 96050.0,
+      "razon": "Mismo emisor y mismo monto en 3 días, con consecutivo distinto."
+    },
+    {
+      "tipo": "monto_inusual",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-07",
+        "lote-1-04",
+        "lote-1-05",
+        "lote-1-06"
+      ],
+      "monto_en_riesgo": 416857.0,
+      "razon": "Monto ~2.8 veces el promedio de las 3 facturas anteriores de este proveedor."
+    },
+    {
+      "tipo": "monto_inusual",
+      "confianza": "media",
+      "correos": [
+        "lote-1-19"
+      ],
+      "monto_en_riesgo": 363577.5,
+      "razon": "Monto ~1.8 veces el promedio de las 2 facturas anteriores.",
+      "nota": "Caso para ENSEÑAR: en la demo se marca 'Esto es normal' (o '2' en WhatsApp). Al procesar el lote 2, la factura pinar-temporada-2 NO debe alertar: queda como normal_aprendido."
+    },
+    {
+      "tipo": "rechazo_hacienda",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-14"
+      ],
+      "monto_en_riesgo": 109610.0,
+      "razon": "El mensaje de respuesta de Hacienda dice Rechazado."
+    },
+    {
+      "tipo": "cobro_sin_factura",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-31"
+      ],
+      "monto_en_riesgo": 310000,
+      "razon": "Correo que pide un pago sin ninguna factura electrónica de ese emisor."
+    },
+    {
+      "tipo": "vencido",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-29"
+      ],
+      "monto_en_riesgo": 425000,
+      "razon": "Cuota de préstamo vencida el 15/11/2026."
+    },
+    {
+      "tipo": "vencido",
+      "confianza": "alta",
+      "correos": [
+        "lote-1-33"
+      ],
+      "monto_en_riesgo": 560000,
+      "razon": "Cobro pendiente a cliente, vencido el 04/11/2026.",
+      "nota": "Es dinero POR COBRAR."
+    }
+  ],
+  "semaforo": {
+    "despues_lote_1": "rojo",
+    "despues_lote_2": "rojo",
+    "frase_ejemplo": "Tenés 2 pagos vencidos y 4 cobros que no cuadran."
+  },
+  "revisar": [
+    {
+      "correo": "lote-1-16",
+      "razon": "Factura sin respuesta de Hacienda (confianza baja: revisar, no alerta)."
+    }
+  ],
+  "sin_alerta_si_se_enseno": [
+    {
+      "correo": "lote-2-02",
+      "estado": "normal_aprendido"
+    }
+  ],
+  "proximos_7_dias": [
+    "CCSS planilla 26/11 (₡1 248 750)",
+    "Contador: documentos para el 25/11"
+  ]
+}
