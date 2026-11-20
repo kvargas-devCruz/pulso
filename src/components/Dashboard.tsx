@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { PulsoState } from "@/lib/state";
-import { Badge, Button, Card, PulseIcon, SectionTitle, colones, fecha, type Tone } from "./ui";
+import { Avatar, Badge, Button, Card, PulseIcon, SectionTitle, colones, fecha, type Tone } from "./ui";
+import { AskPulso, LiveRun, type LiveAlert, type LiveRunState } from "./Agent";
 import { EvidenceModal, EmailModal, DraftModal } from "./Modals";
 import { Phone } from "./Phone";
 import { BarChart, CATEGORY_COLOR, Donut, KpiCard, METHOD_COLOR, STATUS_COLOR, colonesShort } from "./Charts";
@@ -38,6 +39,7 @@ export function Dashboard() {
   const [showLog, setShowLog] = useState(false);
   const [view, setView] = useState<View>("inicio");
   const [cat, setCat] = useState<string>("todos");
+  const [live, setLive] = useState<LiveRunState | null>(null);
 
   const refresh = useCallback(async () => {
     const s = await api<PulsoState>("/api/state");
@@ -103,9 +105,30 @@ export function Dashboard() {
   const weekSalesTotal = weekSales.reduce((t, d) => t + d.amount, 0);
   const weekCard = weekSales.reduce((t, d) => t + d.card, 0);
 
-  const ingest = (lote: "lote-1" | "lote-2") =>
-    act(lote, () => api("/api/ingest", { method: "POST", body: JSON.stringify({ source: "demo", lote }) }),
-      lote === "lote-1" ? "Listo: leí la bandeja." : "Llegó un correo nuevo y lo revisé.");
+  // Procesar correos con el agente a la vista: los pasos reales se revelan uno por uno.
+  const ingest = async (lote: "lote-1" | "lote-2") => {
+    const label = lote === "lote-1" ? "Bandeja de prueba" : "Llegó un correo nuevo";
+    setView("inicio");
+    setBusy(lote);
+    setLive({ label, steps: null, alerts: [], headline: null });
+    try {
+      const r = await api<{ run: { steps: { step: string; detail: string }[]; headline: string }; alerts: LiveAlert[] }>(
+        "/api/ingest", { method: "POST", body: JSON.stringify({ source: "demo", lote }) });
+      setLive({ label, steps: r.run.steps, alerts: r.alerts, headline: r.run.headline });
+      // El panel se actualiza cuando termina la animación (≈ 420 ms por paso).
+      setTimeout(() => { refresh().catch(() => undefined); }, r.run.steps.length * 420 + 150);
+    } catch (e) {
+      setLive(null);
+      setToast(e instanceof Error ? e.message : "Algo salió mal.");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const openAlert = (id: string) => {
+    const a = state.alerts.find((x) => x.id === id);
+    if (a) setEvidence(a);
+    else refresh().then((s) => { const b = s.alerts.find((x) => x.id === id); if (b) setEvidence(b); });
+  };
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-16 pt-5 sm:px-6">
@@ -154,7 +177,7 @@ export function Dashboard() {
             </Button>
           )}
           {!empty && (
-            <Button variant="ghost" disabled={!!busy} onClick={() => confirm("¿Reiniciar la demo? Se borran los datos de prueba.") && act("reset", () => api("/api/reset", { method: "POST" }), "Demo reiniciada.")}>
+            <Button variant="ghost" disabled={!!busy} onClick={() => confirm("¿Reiniciar la demo? Se borran los datos de prueba.") && (setLive(null), act("reset", () => api("/api/reset", { method: "POST" }), "Demo reiniciada."))}>
               Reiniciar
             </Button>
           )}
@@ -168,7 +191,9 @@ export function Dashboard() {
         <Badge tone="gray">Gmail: solo lectura + borradores · nunca envía</Badge>
       </div>
 
-      {empty ? (
+      {empty && live ? (
+        <div className="mx-auto max-w-xl"><LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} /></div>
+      ) : empty ? (
         <EmptyState busy={busy === "lote-1"} onStart={() => ingest("lote-1")} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -186,8 +211,9 @@ export function Dashboard() {
           <div className="min-w-0 space-y-5">
             {view === "correo" && <MailTabs categories={state.categories} cat={cat} onPick={setCat} />}
 
-            {/* Bitácora del agente */}
-            {view === "inicio" && state.lastRun && (
+            {/* Bitácora del agente (animada mientras trabaja) */}
+            {view === "inicio" && live && <LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} />}
+            {view === "inicio" && !live && state.lastRun && (
               <Card className="py-4">
                 <div className="flex items-start gap-3">
                   <PulseIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
@@ -346,13 +372,19 @@ export function Dashboard() {
             </>)}
 
             {view === "inicio" && (<>
-            {/* Alertas */}
+            <AskPulso suggestions={state.suggestions} onOpenEmail={setEmailId} />
+
+            {/* Alertas: un feed de "esto necesita tu revisión" */}
             <Card>
-              <SectionTitle aside={<span className="text-sm text-muted">{open.length} abiertas</span>}>Lo que no cuadra</SectionTitle>
+              <SectionTitle aside={open.length ? <span className="rounded-full bg-red-soft px-2.5 py-0.5 text-xs font-semibold text-red">{open.length} para revisar</span> : null}>Lo que no cuadra</SectionTitle>
               {open.length === 0 ? (
-                <p className="text-sm text-muted">Nada raro por ahora. ✅</p>
+                <div className="flex flex-col items-center rounded-2xl bg-green-soft px-6 py-8 text-center">
+                  <span className="mb-2 text-3xl" aria-hidden>✅</span>
+                  <p className="font-semibold text-green">Nada para revisar hoy</p>
+                  <p className="mt-1 text-sm text-muted">Sigo vigilando tu correo. Si llega algo raro, te aviso por WhatsApp.</p>
+                </div>
               ) : (
-                <ul className="divide-y divide-line">
+                <ul className="space-y-3">
                   {open.map((a) => (
                     <AlertRow
                       key={a.id}
@@ -377,7 +409,7 @@ export function Dashboard() {
                   <ul className="space-y-1 text-sm text-stone-500">
                     {learned.map((a) => (
                       <li key={a.id} className="flex flex-wrap items-center justify-between gap-2">
-                        <span>{a.title} · {a.counterparty} · {colones(a.amountAtRisk)}</span>
+                        <span className="flex items-center gap-2"><Avatar name={a.counterparty} size={22} /><span>{a.title} · {a.counterparty} · {colones(a.amountAtRisk)}</span></span>
                         <button className="text-xs underline hover:text-ink" onClick={() => setEvidence(a)}>ver</button>
                       </li>
                     ))}
@@ -407,7 +439,7 @@ export function Dashboard() {
                   <ul className="space-y-2 text-sm">
                     {state.upcoming.map((u) => (
                       <li key={u.emailId} className="flex items-center justify-between gap-3">
-                        <button className="text-left hover:underline" onClick={() => setEmailId(u.emailId)}>{u.label}</button>
+                        <button className="flex items-center gap-2 text-left hover:underline" onClick={() => setEmailId(u.emailId)}><Avatar name={u.counterparty} size={26} />{u.label}</button>
                         <Badge tone={u.days <= 2 ? "red" : "amber"}>{u.days === 0 ? "hoy" : `${fecha(u.dueDate)}`}</Badge>
                       </li>
                     ))}
@@ -420,7 +452,7 @@ export function Dashboard() {
                   <ul className="space-y-2 text-sm">
                     {state.receivables.map((r) => (
                       <li key={r.emailId} className="flex items-center justify-between gap-3">
-                        <button className="text-left hover:underline" onClick={() => setEmailId(r.emailId)}>{r.counterparty}</button>
+                        <button className="flex items-center gap-2 text-left hover:underline" onClick={() => setEmailId(r.emailId)}><Avatar name={r.counterparty} size={26} />{r.counterparty}</button>
                         <span className="tabular font-medium">{colones(r.amount)} <Badge tone={statusTone(r.status)}>{r.status}</Badge></span>
                       </li>
                     ))}
@@ -466,7 +498,7 @@ export function Dashboard() {
                   <tbody>
                     {state.documents.filter((d) => d.category !== "ruido").map((d) => (
                       <tr key={d.emailId} className="cursor-pointer border-b border-line/70 hover:bg-stone-50" onClick={() => setEmailId(d.emailId)}>
-                        <td className="px-5 py-2"><div className="font-medium">{d.counterparty ?? d.from}</div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></td>
+                        <td className="px-5 py-2"><div className="flex items-center gap-2.5"><Avatar name={d.counterparty ?? d.from} size={30} /><div><div className="font-medium">{d.counterparty ?? d.from}</div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></div></div></td>
                         <td className="py-2">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)}` : d.summary.slice(0, 48)}</td>
                         <td className="py-2 text-right tabular">
                           {colones(d.amount)}
@@ -556,29 +588,43 @@ function AlertRow({ a, busy, onEvidence, onApprove, onDraft, onNormal, onDismiss
 }) {
   const approved = a.action && a.action.status !== "pendiente" && a.action.status !== "descartada";
   const canNormal = a.type !== "rechazo_hacienda" && !(a.type === "duplicado" && a.confidence === "alta");
+  const porCobrar = a.type === "vencido" && a.meta.porCobrar;
   return (
-    <li className="py-4 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <li className={`rounded-2xl border bg-surface p-4 transition hover:shadow-md ${a.confidence === "alta" ? "border-red/20" : "border-line"}`}>
+      <div className="flex items-start gap-3">
+        <Avatar name={a.counterparty} size={40} />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold">{a.title}</span>
-            <Badge tone={confTone(a.confidence)}>confianza {a.confidence}</Badge>
-            {a.notified && <Badge tone="green">avisado por WhatsApp</Badge>}
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold">{a.title}</span>
+                <Badge tone={confTone(a.confidence)}>confianza {a.confidence}</Badge>
+                {a.notified && <Badge tone="green">avisado por WhatsApp</Badge>}
+              </div>
+              <div className="text-sm text-muted">{a.counterparty}</div>
+            </div>
+            {a.amountAtRisk ? (
+              <div className="text-right">
+                <div className="tabular text-lg font-bold leading-tight">{colones(a.amountAtRisk)}</div>
+                <div className="text-[11px] text-muted">{porCobrar ? "por cobrar" : "en riesgo"}</div>
+              </div>
+            ) : null}
           </div>
-          <div className="mt-0.5 text-sm text-muted">{a.counterparty}{a.amountAtRisk ? <> · <span className="tabular font-medium text-ink">{colones(a.amountAtRisk)}</span> {a.type === "vencido" && a.meta.porCobrar ? "por cobrar" : "en riesgo"}</> : null}</div>
-          <p className="mt-1 text-sm">{a.explanation}</p>
+          <p className="mt-2 text-sm">{a.explanation}</p>
           <p className="mt-1 text-xs text-muted">Por qué: {a.reason}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {approved ? (
+              <Button variant="primary" onClick={onDraft}>✓ Correo listo · ver</Button>
+            ) : (
+              <Button variant="primary" disabled={busy === a.id + "ap"} onClick={onApprove}>{a.type === "vencido" && !porCobrar ? "Crear recordatorio" : "Preparar correo"}</Button>
+            )}
+            <Button onClick={onEvidence}>Ver evidencia</Button>
+            <span className="ml-auto flex gap-1">
+              {canNormal && <Button variant="ghost" disabled={busy === a.id + "no"} onClick={onNormal}>Es normal</Button>}
+              <Button variant="ghost" onClick={onDismiss}>Descartar</Button>
+            </span>
+          </div>
         </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button onClick={onEvidence}>Ver evidencia</Button>
-        {approved ? (
-          <Button variant="primary" onClick={onDraft}>✓ Correo listo · ver</Button>
-        ) : (
-          <Button variant="primary" disabled={busy === a.id + "ap"} onClick={onApprove}>{a.type === "vencido" && !a.meta.porCobrar ? "Crear recordatorio" : "Preparar correo"}</Button>
-        )}
-        {canNormal && <Button variant="ghost" disabled={busy === a.id + "no"} onClick={onNormal}>Es normal</Button>}
-        <Button variant="ghost" onClick={onDismiss}>Descartar</Button>
       </div>
     </li>
   );
@@ -645,6 +691,7 @@ function CategoryView({ category, docs, onOpen, onBack }: {
           {sorted.map((d) => (
             <li key={d.emailId}>
               <button onClick={() => onOpen(d.emailId)} className="flex w-full flex-wrap items-start gap-x-4 gap-y-1 px-5 py-3 text-left transition-colors hover:bg-stone-50">
+                <Avatar name={d.counterparty ?? d.from} size={36} />
                 <div className="min-w-0 flex-1 basis-56">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{d.counterparty ?? d.from}</span>

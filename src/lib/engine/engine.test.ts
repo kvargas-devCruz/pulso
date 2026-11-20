@@ -6,6 +6,11 @@ import { parseAmounts, parseDueDate } from "./extract";
 import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleSettlementMismatch, ruleUnusualAmounts, type Doc } from "./rules";
 import { parseSettlementCsv, parseSettlementText } from "./settlement";
 import { companyCharts } from "./status";
+import { answerQuestion } from "./ask";
+import { joinDocs, runIngest } from "./pipeline";
+import { LocalStore } from "../store/local";
+import { demoAdapter } from "../ingest";
+import os from "os";
 import type { AlertDraft, EmailRecord, Extraction, InvoiceData, SettlementData } from "../types";
 
 const demo = (lote: string, file: string) => path.join(process.cwd(), "data", "bandeja-prueba", lote, file);
@@ -207,4 +212,30 @@ describe("cierres del datáfono y de facturación", () => {
     expect(Object.fromEntries(c.salesByMethod.map((m) => [m.key, m.amount]))).toEqual({ efectivo: 200000, tarjeta: 500000, sinpe: 100000 });
     expect(c.debtByCategory).toEqual([]); // los cierres no son deudas
   });
+});
+
+describe("Preguntale a Pulso (respuestas con código y fuente)", () => {
+  async function demoState() {
+    process.env.PULSO_USE_CLAUDE = "0";
+    const store = new LocalStore(await fs.mkdtemp(path.join(os.tmpdir(), "pulso-ask-")));
+    await runIngest(store, demoAdapter("lote-1", path.join(process.cwd(), "data", "bandeja-prueba")), "2026-11-20");
+    return { docs: joinDocs(await store.listEmails(), await store.listExtractions()), alerts: await store.listAlerts() };
+  }
+  it("responde las preguntas sugeridas con los montos exactos y cita los correos", async () => {
+    const { docs, alerts } = await demoState();
+    const ask = (q: string) => answerQuestion(q, docs, alerts, "2026-11-20");
+    const cuadre = ask("¿Cuadró el datáfono el 17/11?");
+    expect(cuadre.intent).toBe("cuadre");
+    expect(cuadre.answer).toContain("No cuadró");
+    expect(cuadre.answer).toContain("₡45 000");
+    expect(cuadre.sources).toHaveLength(2);
+    expect(ask("¿Cuadró el datáfono ayer?").answer).toMatch(/^Sí, el 19\/11\/2026 cuadró/);
+    const debo = ask("¿Cuánto debo esta semana?");
+    expect(debo.answer).toContain("₡425 000 vencido");
+    expect(debo.answer).toContain("CCSS ₡1 248 750");
+    expect(ask("¿Quién me debe?").answer).toContain("Condominio Las Lomas: ₡560 000");
+    expect(ask("¿Hay facturas rechazadas por Hacienda?").answer).toContain("Eléctricos Volta S.A., ₡109 610");
+    expect(ask("¿Cuánto le debo a Cementos?").intent).toBe("proveedor");
+    expect(ask("¿cuál es el clima?").intent).toBe("no_entendi");
+  }, 30000);
 });

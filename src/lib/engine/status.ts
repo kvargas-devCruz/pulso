@@ -138,14 +138,14 @@ export interface CompanyCharts {
 
 const NOT_PAYABLE = new Set(["cobro_pendiente", "pago_recibido", "ruido"]);
 
-function payState(d: Doc, today: string): PayState {
+export function payState(d: Doc, today: string): PayState {
   if (d.ext.status === "pagado") return "pagado";
   if (d.ext.status === "vencido" || (d.ext.dueDate !== null && d.ext.dueDate < today)) return "vencido";
   return "pendiente";
 }
 
-export function companyCharts(docs: Doc[], today: string, maxSlices = 5): CompanyCharts {
-  // Lo que la empresa paga: con monto, ni ruido, ni clientes, ni avisos informativos.
+/** Lo que la empresa paga: con monto, ni ruido, ni clientes, ni avisos informativos; una factura duplicada cuenta una vez. */
+export function payableDocs(docs: Doc[]): Doc[] {
   const unique = new Map<string, Doc>();
   for (const d of docs) {
     if (d.ext.amount === null || d.ext.amount <= 0) continue;
@@ -153,7 +153,11 @@ export function companyCharts(docs: Doc[], today: string, maxSlices = 5): Compan
     const k = d.ext.invoice ? `${d.ext.invoice.issuerTaxId}:${d.ext.invoice.docNumber}` : d.email.id;
     if (!unique.has(k)) unique.set(k, d);
   }
-  const payables = [...unique.values()];
+  return [...unique.values()];
+}
+
+export function companyCharts(docs: Doc[], today: string, maxSlices = 5): CompanyCharts {
+  const payables = payableDocs(docs);
 
   const payLabels: Record<PayState, string> = { pagado: "Pagado", pendiente: "Por pagar", vencido: "Vencido" };
   const payments = (["vencido", "pendiente", "pagado"] as PayState[]).map((key) => {

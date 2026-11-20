@@ -37,6 +37,11 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 - Bandeja de prueba: 12 cierres nuevos (6 días, uno con ₡45 000 de diferencia). `npm run eval` → **9/9 alertas · 0 falsos positivos · extracción 100 % (48 correos)**. `npm test`: 20 pruebas.
 - Formato de los cierres: ficticio. Falta validarlo con un cierre real del datáfono y del software que use el restaurante.
 
+**Análisis de la competencia y mejoras de interfaz (viernes en la noche):**
+- Se revisaron Alegra (CR; lanzó "Alegra Bot" en acceso anticipado), QuickBooks (Business Feed de agentes), Xero (JAX), Digits, Ramp (cuentas por pagar con IA) y Bolo/Zumma (WhatsApp en LatAm). Diferenciador de Pulso: lee todo el correo, con cualquier sistema, y vigila lo que llega (Alegra Bot solo ve lo registrado en Alegra).
+- Mejoras tomadas de ese análisis: bitácora en vivo al procesar correos (pasos reales revelados uno por uno, como Ramp), avatares por proveedor (como Digits/Ramp), "Lo que no cuadra" como feed con estado vacío ("Nada para revisar hoy"), y **Preguntale a Pulso** (R21) con preguntas sugeridas, también por WhatsApp. Las respuestas se calculan con código y citan los correos de respaldo.
+- `npm test`: 21 pruebas · `npm run eval`: 9/9, 0 falsos positivos.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:

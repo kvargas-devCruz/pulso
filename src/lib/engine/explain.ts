@@ -90,12 +90,8 @@ export function draftAction(
         kind = "correo_proveedor";
         subject = `Consulta sobre el cierre del datáfono del ${fecha(alert.meta.date as string)}`;
         body =
-          `Hola, equipo de ${alert.counterparty}:
-
-` +
-          `En el cierre del lote ${alert.meta.batch ?? ""} del ${fecha(alert.meta.date as string)} el datáfono liquidó ${colones(Number(alert.meta.posCard))} en ventas con tarjeta, pero según nuestro sistema de facturación ese día vendimos ${colones(Number(alert.meta.salesCard))} con tarjeta. Hay una diferencia de ${colones(alert.amountAtRisk)}. ¿Nos ayudan a revisar si quedó alguna transacción sin liquidar?
-
-${firma}`;
+          `Hola, equipo de ${alert.counterparty}:\n\n` +
+          `En el cierre del lote ${alert.meta.batch ?? ""} del ${fecha(alert.meta.date as string)} el datáfono liquidó ${colones(Number(alert.meta.posCard))} en ventas con tarjeta, pero según nuestro sistema de facturación ese día vendimos ${colones(Number(alert.meta.salesCard))} con tarjeta. Hay una diferencia de ${colones(alert.amountAtRisk)}. ¿Nos ayudan a revisar si quedó alguna transacción sin liquidar?\n\n${firma}`;
       } else {
         kind = "recordatorio";
         subject = `Revisar ventas con tarjeta del ${fecha(alert.meta.date as string)}`;

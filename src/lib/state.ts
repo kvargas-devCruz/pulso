@@ -7,6 +7,7 @@ import { semaphore, upcoming, yourWeek, categoryLabel, companyCharts } from "./e
 import { alertTitle } from "./engine/explain";
 import { senderName } from "./engine/extract";
 import { claudeEnabled } from "./engine/claude";
+import { SUGGESTED_QUESTIONS } from "./engine/ask";
 import { whatsappConfigured } from "./notify/whatsapp";
 
 export async function buildState(store: Store, today: string) {
@@ -82,6 +83,7 @@ export async function buildState(store: Store, today: string) {
     week: yourWeek(alerts, next),
     categories,
     charts: companyCharts(docs, today),
+    suggestions: SUGGESTED_QUESTIONS,
     documents,
     rules,
     messages,

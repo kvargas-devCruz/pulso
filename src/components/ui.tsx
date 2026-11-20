@@ -89,3 +89,33 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     </div>
   );
 }
+
+// Avatar de una contraparte: iniciales con un color fijo por nombre (paleta categórica
+// validada; el color sigue a la entidad, no a su posición en la lista).
+const AVATAR_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+const AVATAR_SKIP = new Set(["s.a.", "sa", "s.a", "de", "del", "la", "el", "y", "cr", "srl", "ltda", "&"]);
+
+export function initials(name: string): string {
+  const words = name.replace(/[.,]/g, " ").split(/\s+/).filter((w) => w && !AVATAR_SKIP.has(w.toLowerCase()));
+  return ((words[0]?.[0] ?? "?") + (words[1]?.[0] ?? "")).toUpperCase();
+}
+
+export function avatarColor(name: string): string {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+export function Avatar({ name, size = 36 }: { name: string | null | undefined; size?: number }) {
+  const n = name?.trim() || "?";
+  const bg = avatarColor(n);
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex shrink-0 items-center justify-center rounded-xl font-semibold"
+      style={{ width: size, height: size, background: bg, color: bg === "#eda100" ? "#0b0b0b" : "#fff", fontSize: Math.round(size * 0.38) }}
+    >
+      {initials(n)}
+    </span>
+  );
+}

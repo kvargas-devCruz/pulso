@@ -41,6 +41,7 @@ src/
       rules.ts                # reglas puras con confianza + reglas aprendidas
       status.ts               # semáforo, próximos 7 días, Tu semana
       explain.ts              # explicaciones, borradores y texto de WhatsApp
+      ask.ts                  # "Preguntale a Pulso": la pregunta elige qué calcular; los números salen de código
     store/                    # Store: SupabaseStore (producción) | LocalStore (demo)
     notify/whatsapp.ts        # Twilio + validación de firma
     state.ts                  # arma el estado del panel

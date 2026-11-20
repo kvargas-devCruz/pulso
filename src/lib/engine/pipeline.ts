@@ -9,7 +9,8 @@ import { extractEmail, haciendaMessagesFromEmail, invoicesFromEmail, senderDomai
 import { learnedConditionFor, matchLearnedRule, runRules, type Doc } from "./rules";
 import { actionEmailId, draftAction, explain, whatsappAlertText, alertTitle } from "./explain";
 import { sendWhatsApp } from "../notify/whatsapp";
-import { colones, plural } from "../format";
+import { colones, plural, todayCR } from "../format";
+import { answerQuestion, type AskAnswer } from "./ask";
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const nowIso = () => new Date().toISOString();
@@ -241,7 +242,13 @@ export async function deleteRule(store: Store, ruleId: string): Promise<void> {
   await store.upsertAlerts(alerts.map((a) => ({ ...a, status: "abierta", learnedRuleId: null })));
 }
 
-/** Respuesta del dueño por WhatsApp: "1" aprobar, "2" es normal, "VER" detalle. */
+/** "Preguntale a Pulso" (R21): mismo flujo para el panel y WhatsApp; los números salen de código. */
+export async function ask(store: Store, question: string, today: string): Promise<AskAnswer> {
+  const docs = joinDocs(await store.listEmails(), await store.listExtractions());
+  return answerQuestion(question, docs, await store.listAlerts(), today);
+}
+
+/** Respuesta del dueño por WhatsApp: "1" aprobar, "2" es normal, "VER" detalle; cualquier otra cosa es una pregunta. */
 export async function handleReply(store: Store, text: string): Promise<string> {
   const msg = text.trim().toLowerCase();
   await store.addMessage({ id: id("wa", "in" + text + nowIso()), direction: "entrante", kind: "respuesta", body: text.trim(), status: "recibido", alertId: null, createdAt: nowIso() });
@@ -271,7 +278,10 @@ export async function handleReply(store: Store, text: string): Promise<string> {
     } else if (msg === "ver" || msg.startsWith("ver ")) {
       reply = target ? `🔎 ${alertTitle(target)} · ${target.counterparty}: ${appUrl()}/?alerta=${target.id}` : `🔎 Tu panel: ${appUrl()}`;
     } else {
-      reply = "Respondé *1* para preparar el correo, *2* si es normal, o *VER* para abrir el detalle.";
+      const a = await ask(store, text, todayCR());
+      reply = a.intent === "no_entendi"
+        ? `${a.answer}\n\nO respondé *1* para preparar el correo, *2* si es normal, o *VER* para el detalle.`
+        : `${a.answer}${a.sources.length ? `\n\n📎 ${plural(a.sources.length, "correo de respaldo", "correos de respaldo")} en el panel: ${appUrl()}` : ""}`;
     }
   } catch (err) {
     reply = `⚠️ ${err instanceof Error ? err.message : "No pude hacerlo."}`;

@@ -1,5 +1,6 @@
 import { demoAdapter, gmailAdapter, DEMO_LOTES, type DemoLote } from "@/lib/ingest";
 import { runIngest } from "@/lib/engine/pipeline";
+import { alertTitle } from "@/lib/engine/explain";
 import { handle, store, today } from "@/lib/api";
 
 // Lote 1 hace varios viajes a Supabase (y a Claude cuando está activo).
@@ -11,6 +12,12 @@ export async function POST(req: Request) {
     if (body.source === "gmail") return runIngest(store(), gmailAdapter(), today());
     const lote = (DEMO_LOTES as readonly string[]).includes(body.lote ?? "") ? (body.lote as DemoLote) : "lote-1";
     const res = await runIngest(store(), demoAdapter(lote), today());
-    return { run: res.run, newEmails: res.newEmails, newAlerts: res.newAlerts.length, notified: !!res.notified };
+    return {
+      run: res.run,
+      newEmails: res.newEmails,
+      newAlerts: res.newAlerts.length,
+      alerts: res.newAlerts.filter((a) => a.status === "abierta").map((a) => ({ id: a.id, title: alertTitle(a), counterparty: a.counterparty, amount: a.amountAtRisk, confidence: a.confidence })),
+      notified: !!res.notified,
+    };
   });
 }

@@ -24,7 +24,8 @@
 - **WhatsApp:** alerta agrupada; respondés **1** (preparar correo), **2** (es normal) o **VER** (detalle).
 - **Aprende de tus decisiones:** "es normal" crea una regla acotada al proveedor; los casos parecidos quedan en gris sin molestar. Nunca aprende a ignorar un rechazo de Hacienda.
 - **Borradores con aprobación:** correo al proveedor, cobro al cliente o recordatorio, listos para copiar o abrir en tu correo.
-- **Tu semana**, lo que te deben, tu correo ordenado por categoría y la **bitácora** de lo que hizo el agente.
+- **Tu semana**, lo que te deben, tu correo ordenado por categoría y la **bitácora** de lo que hizo el agente, que se ve **en vivo, paso a paso**, cada vez que llega correo.
+- **Preguntale a Pulso** (en el panel o por WhatsApp): "¿Cuánto debo esta semana?", "¿Cuadró el datáfono ayer?", "¿Cuánto le debo a Cementos?". La respuesta se calcula con código y muestra los correos de donde salió.
 
 ---
 
@@ -49,7 +50,7 @@ En el panel, tocá **"Probar con la bandeja de prueba"** (Ferretería El Roble S
 ### Guion de la demo
 1. **Probar con la bandeja de prueba** → semáforo en rojo, bitácora y 8 riesgos (incluye el cierre del datáfono del 17/11 que no cuadra).
 2. En "Monto fuera de lo normal" de **Maderas El Pinar**, tocá **Es normal** (temporada navideña).
-3. Tocá **📩 Llegó un correo nuevo** → aparece el **posible duplicado** de Distribuidora del Valle y llega la alerta al WhatsApp.
+3. Tocá **📩 Llegó un correo nuevo** → Pulso muestra lo que hace paso a paso y termina en el **posible duplicado** de Distribuidora del Valle; la alerta llega al WhatsApp.
 4. **Ver evidencia** → las dos facturas lado a lado (misma clave, mismo consecutivo).
 5. En el celular de la derecha respondé **1** → el correo al proveedor queda listo. No se envió nada.
 6. La nueva factura de temporada de Maderas El Pinar quedó en gris: *normal según tu decisión*.
