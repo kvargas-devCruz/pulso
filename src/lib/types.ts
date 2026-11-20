@@ -189,7 +189,7 @@ export interface WhatsAppMessage {
   direction: "saliente" | "entrante";
   kind: "alerta" | "resumen" | "respuesta";
   body: string;
-  status: "enviado" | "simulado" | "fallido" | "recibido";
+  status: "enviado" | "simulado" | "fallido" | "recibido" | "tope_diario";
   alertId: string | null;
   createdAt: string;
 }

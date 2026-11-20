@@ -63,6 +63,20 @@ export interface IngestResult {
   notified: WhatsAppMessage | null;
 }
 
+/**
+ * Tope diario de WhatsApp (ADR-0005, sin spam): alertas y resúmenes enviados de verdad en las
+ * últimas 24 h. Las respuestas a lo que el dueño escribe no cuentan.
+ */
+export async function sendCapped(store: Store, body: string): Promise<{ status: WhatsAppMessage["status"]; sid?: string; error?: string }> {
+  const cap = Number(process.env.PULSO_WHATSAPP_DAILY_CAP ?? 15);
+  const since = Date.now() - 24 * 3600_000;
+  const sent = (await store.listMessages()).filter(
+    (m) => m.direction === "saliente" && m.kind !== "respuesta" && m.status === "enviado" && Date.parse(m.createdAt) >= since,
+  ).length;
+  if (sent >= cap) return { status: "tope_diario" };
+  return sendWhatsApp(body);
+}
+
 export async function runIngest(store: Store, adapter: SourceAdapter, today: string): Promise<IngestResult> {
   const company = await store.getCompany();
   const runId = `run_${Date.now()}`;
@@ -159,11 +173,11 @@ export async function runIngest(store: Store, adapter: SourceAdapter, today: str
     .sort((a, b) => priority(b) - priority(a));
   if (toNotify.length) {
     const body = whatsappAlertText(toNotify, appUrl());
-    const res = await sendWhatsApp(body);
+    const res = await sendCapped(store, body);
     notified = { id: id("wa", runId + body), direction: "saliente", kind: "alerta", body, status: res.status, alertId: toNotify[0].id, createdAt: nowIso() };
     await store.addMessage(notified);
     await store.upsertAlerts(toNotify.map((a) => ({ ...a, notified: true })));
-    step("notificar", `Te avisé por WhatsApp de ${plural(toNotify.length, "alerta", "alertas")}${res.status === "simulado" ? " (simulado: falta configurar Twilio)" : res.status === "fallido" ? " (falló el envío)" : ""}.`, toNotify.length);
+    step("notificar", `Te avisé por WhatsApp de ${plural(toNotify.length, "alerta", "alertas")}${res.status === "simulado" ? " (simulado: falta configurar Twilio)" : res.status === "fallido" ? " (falló el envío)" : res.status === "tope_diario" ? " (no se envió: llegué al tope diario; está en el panel)" : ""}.`, toNotify.length);
   }
 
   run.headline = [
@@ -294,7 +308,7 @@ export async function handleReply(store: Store, text: string): Promise<string> {
 export async function sendWeekDigest(store: Store, items: { title: string; why: string; amount: number | null }[]): Promise<WhatsAppMessage> {
   const lines = items.slice(0, 6).map((it, i) => `${i + 1}. ${it.title}${it.amount ? ` (${colones(it.amount)})` : ""}`);
   const body = `*Pulso · Tu semana* 🗓️\n\n${lines.join("\n") || "No hay nada urgente. ✅"}\n\nDetalle: ${appUrl()}`;
-  const res = await sendWhatsApp(body);
+  const res = await sendCapped(store, body);
   const m: WhatsAppMessage = { id: id("wa", "digest" + nowIso()), direction: "saliente", kind: "resumen", body, status: res.status, alertId: null, createdAt: nowIso() };
   await store.addMessage(m);
   return m;

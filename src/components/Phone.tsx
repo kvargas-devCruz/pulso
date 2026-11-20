@@ -44,7 +44,7 @@ export function Phone({ messages, real, busy, onSend }: { messages: WhatsAppMess
                 <Bold text={m.body} />
                 <div className="mt-1 text-right text-[10px] text-stone-500">
                   {new Date(m.createdAt).toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}
-                  {m.status === "simulado" ? " · simulado" : m.status === "fallido" ? " · no se envió" : ""}
+                  {m.status === "simulado" ? " · simulado" : m.status === "fallido" ? " · no se envió" : m.status === "tope_diario" ? " · tope diario: no se envió" : ""}
                 </div>
               </div>
             </div>
