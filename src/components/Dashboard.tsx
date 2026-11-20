@@ -5,7 +5,7 @@ import { Avatar, Badge, Button, Card, PulseIcon, SectionTitle, colones, fecha, t
 import { AskPulso, LiveRun, type LiveAlert, type LiveRunState } from "./Agent";
 import { EvidenceModal, EmailModal, DraftModal } from "./Modals";
 import { Phone } from "./Phone";
-import { BarChart, CATEGORY_COLOR, Donut, KpiCard, METHOD_COLOR, STATUS_COLOR, colonesShort } from "./Charts";
+import { BarChart, CATEGORY_COLOR, Donut, METHOD_COLOR, STATUS_COLOR, colonesShort } from "./Charts";
 
 type AlertView = PulsoState["alerts"][number];
 type DocView = PulsoState["documents"][number];
@@ -17,7 +17,6 @@ const LIGHT = {
   verde: { dot: "bg-green", soft: "bg-green-soft", text: "text-green", label: "Verde" },
 } as const;
 
-const confTone = (c: string): Tone => (c === "alta" ? "red" : c === "media" ? "amber" : "gray");
 const haciendaTone = (s: string | null): Tone => (s === "aceptado" ? "green" : s === "rechazado" ? "red" : s ? "amber" : "gray");
 const haciendaLabel = (s: string | null) => (s === "aceptado" ? "Aceptada" : s === "rechazado" ? "Rechazada" : s === "sin_respuesta" ? "Sin respuesta" : "");
 const statusTone = (s: string): Tone => (s === "vencido" ? "red" : s === "pendiente" ? "amber" : s === "pagado" ? "green" : "gray");
@@ -99,7 +98,6 @@ export function Dashboard() {
   const paidTotal = state.charts.payments.find((x) => x.key === "pagado")?.amount ?? 0;
   const receivableTotal = state.receivables.reduce((t, r) => t + (r.amount ?? 0), 0);
   const receivableOverdue = state.receivables.filter((r) => r.status === "vencido" || (r.dueDate !== null && r.dueDate < state.today)).reduce((t, r) => t + (r.amount ?? 0), 0);
-  const upcomingTotal = state.upcoming.filter((u) => !u.porCobrar).reduce((t, u) => t + (u.amount ?? 0), 0);
   // Ventas de los últimos 7 días (cierres de caja), y qué parte fue con tarjeta.
   const weekStart = new Date(Date.parse(state.today + "T00:00:00Z") - 6 * 86_400_000).toISOString().slice(0, 10);
   const weekSales = state.charts.salesByDay.filter((d) => d.key >= weekStart);
@@ -117,7 +115,7 @@ export function Dashboard() {
         "/api/ingest", { method: "POST", body: JSON.stringify({ source: "demo", lote }) });
       setLive({ label, steps: r.run.steps, alerts: r.alerts, headline: r.run.headline, notified: r.notified });
       // El panel se actualiza cuando termina la animación (≈ 420 ms por paso).
-      setTimeout(() => { refresh().catch(() => undefined); }, r.run.steps.length * 420 + 150);
+      setTimeout(() => { refresh().catch(() => undefined); setLive((l) => (l ? { ...l, done: true } : l)); }, r.run.steps.length * 420 + 150);
     } catch (e) {
       setLive(null);
       setToast(e instanceof Error ? e.message : "Algo salió mal.");
@@ -131,9 +129,28 @@ export function Dashboard() {
     else refresh().then((s) => { const b = s.alerts.find((x) => x.id === id); if (b) setEvidence(b); });
   };
 
+  // Columna derecha según la sección: solo lo que ayuda a actuar ahí.
+  const asideFor: Partial<Record<View, ReactNode>> = {
+    inicio: (
+      <>
+        <TodayPanel state={state} onGo={setView} />
+        <AskPulso suggestions={state.suggestions} onOpenEmail={setEmailId} compact />
+      </>
+    ),
+    plata: <UpcomingAndReceivables state={state} onOpen={setEmailId} />,
+    whatsapp: (
+      <>
+        <WeekCard week={state.week} busy={!!busy} onSend={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")} />
+        <LearnedCard rules={state.rules} onForget={(id) => act("rule", () => api(`/api/rules/${id}`, { method: "DELETE" }), "Regla borrada: vuelvo a avisarte.")} />
+      </>
+    ),
+  };
+  const aside = asideFor[view] ?? null;
+  const nextDemoStep = !state.loaded.lote1 ? ("lote-1" as const) : !state.loaded.lote2 ? ("lote-2" as const) : null;
+
   return (
     <main className="mx-auto max-w-7xl px-4 pb-16 pt-5 sm:px-6">
-      {/* Barra superior (logo · navegación · empresa y acciones) */}
+      {/* Barra superior: marca · secciones · empresa · controles de la demo (aparte) */}
       <header className="card-soft mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-surface px-4 py-3 sm:px-5">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7b6ff0] to-[#4a3fd0] text-white shadow-md shadow-accent/30">
@@ -141,7 +158,7 @@ export function Dashboard() {
           </span>
           <div>
             <h1 className="text-lg font-bold leading-tight">Pulso</h1>
-            <p className="hidden text-xs text-muted sm:block">El estado de tu empresa, leído de tu correo</p>
+            <p className="hidden text-xs text-muted sm:block">{state.company.name} · hoy {fecha(state.today)}</p>
           </div>
         </div>
 
@@ -152,35 +169,28 @@ export function Dashboard() {
                 key={n.key}
                 onClick={() => { if (view === "whatsapp") setSeenMsgs(state.messages.length); setView(n.key); if (n.key === "whatsapp") setSeenMsgs(state.messages.length); }}
                 aria-current={view === n.key ? "page" : undefined}
-                className={`group relative flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${view === n.key ? "text-accent" : "text-muted hover:text-ink"}`}
+                className={`group relative flex min-w-14 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors ${view === n.key ? "text-accent" : "text-muted hover:text-ink"}`}
               >
                 <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${view === n.key ? "bg-accent-soft" : "group-hover:bg-stone-100"}`}>{n.icon}</span>
                 {n.label}
-                {n.key === "inicio" && open.length > 0 && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-red ring-2 ring-surface" aria-label={`${open.length} alertas abiertas`} />}
-                {n.key === "whatsapp" && view !== "whatsapp" && state.messages.length > seenMsgs && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-[#25d366] ring-2 ring-surface" aria-label="Mensajes nuevos de WhatsApp" />}
+                {n.key === "inicio" && open.length > 0 && <span className="absolute right-2.5 top-1 h-2 w-2 rounded-full bg-red ring-2 ring-surface" aria-label={`${open.length} alertas abiertas`} />}
+                {n.key === "whatsapp" && view !== "whatsapp" && state.messages.length > seenMsgs && <span className="absolute right-2.5 top-1 h-2 w-2 rounded-full bg-[#25d366] ring-2 ring-surface" aria-label="Mensajes nuevos de WhatsApp" />}
               </button>
             ))}
           </nav>
         )}
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="mr-1 text-sm sm:text-right">
-            <div className="font-medium">{state.company.name}</div>
-            <div className="text-xs text-muted">Hoy: {fecha(state.today)}</div>
-          </div>
-          {!state.loaded.lote1 && (
-            <Button variant="primary" disabled={!!busy} onClick={() => ingest("lote-1")}>
-              {busy === "lote-1" ? "Leyendo…" : "Conectar bandeja de prueba"}
-            </Button>
-          )}
-          {state.loaded.lote1 && !state.loaded.lote2 && (
-            <Button variant="primary" disabled={!!busy} onClick={() => ingest("lote-2")}>
-              {busy === "lote-2" ? "Revisando…" : "📩 Llegó un correo nuevo"}
+        {/* Demo: separado del producto */}
+        <div className="ml-auto flex items-center gap-1 rounded-2xl border border-dashed border-accent/40 bg-accent-soft/40 py-1 pl-3 pr-1">
+          <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-accent">Demo</span>
+          {nextDemoStep && (
+            <Button variant="primary" disabled={!!busy} onClick={() => ingest(nextDemoStep)}>
+              {busy === nextDemoStep ? "Leyendo…" : nextDemoStep === "lote-1" ? "Cargar bandeja de prueba" : "📩 Llegó un correo nuevo"}
             </Button>
           )}
           {!empty && (
-            <Button variant="ghost" disabled={!!busy} onClick={() => confirm("¿Reiniciar la demo? Se borran los datos de prueba.") && (setLive(null), act("reset", () => api("/api/reset", { method: "POST" }), "Demo reiniciada."))}>
-              Reiniciar
+            <Button variant="ghost" title="Reiniciar la demo" disabled={!!busy} onClick={() => confirm("¿Reiniciar la demo? Se borran los datos de prueba.") && (setLive(null), act("reset", () => api("/api/reset", { method: "POST" }), "Demo reiniciada."))}>
+              ↺ Reiniciar
             </Button>
           )}
         </div>
@@ -199,382 +209,211 @@ export function Dashboard() {
       ) : empty ? (
         <EmptyState busy={busy === "lote-1"} onStart={() => ingest("lote-1")} />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {view === "reservas" ? (
-            <ReservationsView reservations={state.reservations} today={state.today} onOpen={setEmailId} />
-          ) : view === "whatsapp" ? (
-            <WhatsAppView
-              state={state}
-              busy={busy === "wa"}
-              onCall={(callId, outcome) => { api(`/api/calls/${callId}`, { method: "POST", body: JSON.stringify({ outcome }) }).then(() => refresh()).catch(() => undefined); }}
-              onReminder={(rid, action) => act("rem" + rid, () => api(`/api/reminders/${rid}`, { method: "POST", body: JSON.stringify({ action }) }), action === "borrar" ? "Recordatorio borrado." : "Ahí viene la llamada…")}
-              onSend={(body) => act("wa", () => api("/api/whatsapp/simulate", { method: "POST", body: JSON.stringify({ body }) }))}
-              onDigest={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")}
-            />
-          ) : view === "correo" && cat !== "todos" ? (
-            <div className="min-w-0 space-y-5">
-              <MailTabs categories={state.categories} cat={cat} onPick={setCat} whatsapp={state.counts.whatsapp} />
-              <CategoryView
-                category={cat === "whatsapp"
-                  ? {
-                      category: "whatsapp" as PulsoState["categories"][number]["category"], label: "WhatsApp", count: state.counts.whatsapp,
-                      pendingCount: state.documents.filter((d) => d.channel === "whatsapp" && (d.status === "pendiente" || d.status === "vencido") && d.amount).length,
-                      pendingTotal: state.documents.filter((d) => d.channel === "whatsapp" && (d.status === "pendiente" || d.status === "vencido")).reduce((t, d) => t + (d.amount ?? 0), 0),
-                    }
-                  : state.categories.find((c) => c.category === cat) ?? state.categories[0]}
-                docs={state.documents.filter((d) => (cat === "whatsapp" ? d.channel === "whatsapp" : d.category === cat))}
-                onOpen={setEmailId}
-                onBack={() => setCat("todos")}
-              />
-            </div>
-          ) : (
+        <div className={`grid gap-5 ${aside ? "lg:grid-cols-[minmax(0,1fr)_360px]" : ""}`}>
           <div className="min-w-0 space-y-5">
-            {view === "correo" && <MailTabs categories={state.categories} cat={cat} onPick={setCat} whatsapp={state.counts.whatsapp} />}
+            {/* ------------------------------------------------ INICIO */}
+            {view === "inicio" && (<>
+              {live && <LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} onOpenWhatsApp={() => setView("whatsapp")} />}
 
-            {/* Bitácora del agente (animada mientras trabaja) */}
-            {view === "inicio" && live && <LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} onOpenWhatsApp={() => setView("whatsapp")} />}
-            {view === "inicio" && !live && state.lastRun && (
-              <Card className="py-4">
-                <div className="flex items-start gap-3">
-                  <PulseIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm"><span className="font-semibold">Lo que hice: </span>{state.lastRun.headline}.</p>
+              {/* 1. Estado: semáforo + números clave + última revisión */}
+              <Card>
+                <div className="flex items-center gap-4">
+                  <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full ${L.dot}`} aria-label={`Semáforo en ${L.label}`}>
+                    <PulseIcon className="beat h-7 w-7 text-white" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className={`text-xs font-semibold uppercase tracking-wide ${L.text}`}>Estado de tu empresa · {L.label}</div>
+                    <p className="text-lg font-semibold leading-snug">{state.semaphore.phrase}</p>
+                  </div>
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <StatTile label="Por pagar" value={colonesShort(owed)} hint={`${owed + paidTotal ? Math.round((100 * paidTotal) / (owed + paidTotal)) : 0} % ya pagado`} onClick={() => setView("plata")} />
+                  <StatTile label="Te deben" value={colonesShort(receivableTotal)} hint={receivableOverdue ? `${colonesShort(receivableOverdue)} vencido` : "nada vencido"} onClick={() => setView("plata")} />
+                  <StatTile label="Dinero en riesgo" value={colonesShort(state.semaphore.moneyAtRisk)} hint={`${open.length} ${open.length === 1 ? "alerta" : "alertas"}`} tone="red" />
+                  <StatTile label="Ventas de la semana" value={colonesShort(weekSalesTotal)} hint={weekSales.length ? `${Math.round((100 * weekCard) / weekSalesTotal)} % con tarjeta` : "sin cierres"} onClick={() => setView("plata")} />
+                </dl>
+                {state.lastRun && !live && (
+                  <div className="mt-4 border-t border-line pt-3 text-sm text-muted">
+                    <button onClick={() => setShowLog((v) => !v)} className="flex w-full items-start gap-2 text-left hover:text-ink">
+                      <PulseIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <span className="min-w-0 flex-1"><span className="font-medium text-ink">Última revisión:</span> {state.lastRun.headline}.</span>
+                      <span className="shrink-0 text-xs">{showLog ? "ocultar ▴" : "paso a paso ▾"}</span>
+                    </button>
                     {showLog && (
-                      <ol className="mt-2 space-y-1 text-sm text-muted">
-                        {state.lastRun.steps.map((s, i) => (
-                          <li key={i}><span className="font-mono text-xs uppercase text-ink">{s.step}</span> · {s.detail}</li>
-                        ))}
+                      <ol className="mt-2 space-y-1 pl-6">
+                        {state.lastRun.steps.map((st, i) => <li key={i}><span className="font-medium text-ink">{STEP_NAMES[st.step] ?? st.step}</span> · {st.detail}</li>)}
                       </ol>
                     )}
                   </div>
-                  <Button variant="ghost" onClick={() => setShowLog((v) => !v)}>{showLog ? "Ocultar" : "Paso a paso"}</Button>
-                </div>
+                )}
               </Card>
-            )}
 
-            {view === "inicio" && (<>
-            {/* Semáforo */}
-            <Card className={`${L.soft} border-transparent`}>
-              <div className="flex flex-wrap items-center gap-5">
-                <div className="flex items-center gap-4">
-                  <span className={`relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full ${L.dot}`} aria-label={`Semáforo en ${L.label}`}>
-                    <PulseIcon className="beat h-8 w-8 text-white" />
-                  </span>
-                  <div>
-                    <div className={`text-xs font-semibold uppercase tracking-wide ${L.text}`}>Estado de tu empresa · {L.label}</div>
-                    <p className="max-w-xl text-lg font-semibold leading-snug">{state.semaphore.phrase}</p>
+              {/* 2. Lo que no cuadra: lista compacta, cada fila se abre */}
+              <Card>
+                <SectionTitle aside={open.length ? <span className="rounded-full bg-red-soft px-2.5 py-0.5 text-xs font-semibold text-red">{open.length} para revisar</span> : null}>Lo que no cuadra</SectionTitle>
+                {open.length === 0 ? (
+                  <div className="flex flex-col items-center rounded-2xl bg-green-soft px-6 py-8 text-center">
+                    <span className="mb-2 text-3xl" aria-hidden>✅</span>
+                    <p className="font-semibold text-green">Nada para revisar hoy</p>
+                    <p className="mt-1 text-sm text-muted">Sigo vigilando tu correo y tu WhatsApp. Si llega algo raro, te aviso.</p>
                   </div>
-                </div>
-                <dl className="ml-auto grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
-                  <Metric label="Vencido" value={String(state.semaphore.overdueCount)} />
-                  <Metric label="No cuadra" value={String(state.semaphore.riskCount)} />
-                  <Metric label="Vence en 7 días" value={String(state.semaphore.upcomingCount)} />
-                  <Metric label="Dinero en riesgo" value={colones(state.semaphore.moneyAtRisk)} />
-                </dl>
-              </div>
-            </Card>
-
-            {/* Indicadores (estilo "Company goals") */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-              <div className="col-span-2 grid sm:col-span-1">
-                <KpiCard
-                  tint="#008300"
-                  icon={<IconTrend />}
-                  value={colonesShort(weekSalesTotal)}
-                  label="Ventas de la semana"
-                  progress={weekSalesTotal ? (100 * weekCard) / weekSalesTotal : null}
-                  progressLabel={weekSales.length ? `${Math.round((100 * weekCard) / weekSalesTotal)} % con tarjeta · ${weekSales.length} cierres` : "sin cierres de caja"}
-                  onClick={() => setView("plata")}
-                />
-              </div>
-              <KpiCard
-                tint="#2a78d6"
-                icon={<IconWallet />}
-                value={colonesShort(owed)}
-                label="Por pagar"
-                progress={owed + paidTotal ? (100 * paidTotal) / (owed + paidTotal) : null}
-                progressLabel={`${owed + paidTotal ? Math.round((100 * paidTotal) / (owed + paidTotal)) : 0} % ya pagado`}
-                onClick={() => setView("plata")}
-              />
-              <KpiCard
-                tint="#1baf7a"
-                icon={<IconHand />}
-                value={colonesShort(receivableTotal)}
-                label="Te deben"
-                progress={receivableTotal ? (100 * receivableOverdue) / receivableTotal : null}
-                progressLabel={receivableOverdue ? `${colonesShort(receivableOverdue)} ya vencido` : "nada vencido"}
-              />
-              <KpiCard
-                tint="#d03b3b"
-                icon={<IconAlert />}
-                value={colonesShort(state.semaphore.moneyAtRisk)}
-                label="Dinero en riesgo"
-                progress={owed + receivableTotal ? (100 * state.semaphore.moneyAtRisk) / (owed + receivableTotal) : null}
-                progressLabel={`en ${open.length} alerta${open.length === 1 ? "" : "s"} abierta${open.length === 1 ? "" : "s"}`}
-              />
-              <KpiCard
-                tint="#6250d6"
-                icon={<IconCalendar />}
-                value={colonesShort(upcomingTotal)}
-                label="Vence en 7 días"
-                progress={owed ? (100 * upcomingTotal) / owed : null}
-                progressLabel={`${state.semaphore.upcomingCount} vencimiento${state.semaphore.upcomingCount === 1 ? "" : "s"}`}
-                onClick={() => setView("plata")}
-              />
-            </div>
-
-            </>)}
-
-            {view === "plata" && (<>
-            {/* Gráficos del estado */}
-            <Card>
-              <SectionTitle aside={<span className="text-xs text-muted">montos leídos del XML y del correo</span>}>Cómo está tu plata</SectionTitle>
-              <div className="grid gap-6 sm:grid-cols-3">
-                <Donut
-                  title="Lo que debés, por tipo"
-                  slices={state.charts.debtByCategory}
-                  colors={CATEGORY_COLOR}
-                  measure="amount"
-                  center={colonesShort(state.charts.debtByCategory.reduce((t, s) => t + s.amount, 0))}
-                  centerLabel="por pagar"
-                  empty="No debés nada, según tu correo. ✅"
-                />
-                <Donut
-                  title="Estado de tus pagos"
-                  slices={state.charts.payments}
-                  colors={STATUS_COLOR}
-                  measure="amount"
-                  center={`${state.charts.payments.reduce((t, s) => t + s.count, 0)}`}
-                  centerLabel="cuentas"
-                />
-                <Donut
-                  title="Tus facturas en Hacienda"
-                  slices={state.charts.hacienda}
-                  colors={STATUS_COLOR}
-                  measure="count"
-                  center={`${state.charts.hacienda.reduce((t, s) => t + s.count, 0)}`}
-                  centerLabel="facturas"
-                />
-              </div>
-            </Card>
-
-            <Card>
-              <SectionTitle aside={<span className="text-xs text-muted">sin contar lo ya pagado</span>}>Lo que vence, por semana</SectionTitle>
-              <BarChart data={state.charts.dueByWeek} empty="No tenés nada pendiente de pagar. ✅" />
-            </Card>
-
-            <Card>
-              <SectionTitle aside={<span className="text-xs text-muted">de tus cierres de caja</span>}>Tus ventas</SectionTitle>
-              {state.charts.salesByDay.length === 0 ? (
-                <p className="text-sm text-muted">Cuando lleguen los cierres de caja de tu sistema de facturación, vas a ver aquí lo que vendés cada día.</p>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_220px]">
-                  <BarChart
-                    data={state.charts.salesByDay}
-                    color="#008300"
-                    detail={(d) => {
-                      const day = state.charts.salesByDay.find((x) => x.key === d.key)!;
-                      return `${day.count} facturas · tarjeta ${colonesShort(day.card)} · efectivo ${colonesShort(day.cash)} · SINPE ${colonesShort(day.sinpe)}`;
-                    }}
-                  />
-                  <Donut
-                    title="Cómo te pagan"
-                    slices={state.charts.salesByMethod}
-                    colors={METHOD_COLOR}
-                    measure="amount"
-                    center={colonesShort(state.charts.salesByMethod.reduce((t, m) => t + m.amount, 0))}
-                    centerLabel="vendido"
-                  />
-                </div>
-              )}
-            </Card>
-
-            </>)}
-
-            {view === "inicio" && (<>
-            <TodayReservations reservations={state.reservations} today={state.today} onOpen={() => setView("reservas")} />
-            <AskPulso suggestions={state.suggestions} onOpenEmail={setEmailId} />
-
-            {/* Alertas: un feed de "esto necesita tu revisión" */}
-            <Card>
-              <SectionTitle aside={open.length ? <span className="rounded-full bg-red-soft px-2.5 py-0.5 text-xs font-semibold text-red">{open.length} para revisar</span> : null}>Lo que no cuadra</SectionTitle>
-              {open.length === 0 ? (
-                <div className="flex flex-col items-center rounded-2xl bg-green-soft px-6 py-8 text-center">
-                  <span className="mb-2 text-3xl" aria-hidden>✅</span>
-                  <p className="font-semibold text-green">Nada para revisar hoy</p>
-                  <p className="mt-1 text-sm text-muted">Sigo vigilando tu correo. Si llega algo raro, te aviso por WhatsApp.</p>
-                </div>
-              ) : (
-                <ul className="space-y-3">
-                  {open.map((a) => (
-                    <AlertRow
-                      key={a.id}
-                      a={a}
-                      busy={busy}
-                      onEvidence={() => setEvidence(a)}
-                      onApprove={() => act(a.id + "ap", () => api(`/api/alerts/${a.id}/approve`, { method: "POST" }), "Correo preparado. No envié nada: revisalo y envialo vos.").then(() => setDraft(a))}
-                      onDraft={() => setDraft(a)}
-                      onNormal={() => {
-                        const reason = prompt("¿Por qué es normal? (opcional)", a.type === "monto_inusual" ? "Temporada alta" : "") ?? null;
-                        if (reason === null) return;
-                        act(a.id + "no", () => api(`/api/alerts/${a.id}/normal`, { method: "POST", body: JSON.stringify({ reason }) }), "Entendido. La próxima vez no te molesto con esto.");
-                      }}
-                      onDismiss={() => act(a.id + "ds", () => api(`/api/alerts/${a.id}/dismiss`, { method: "POST" }), "Alerta descartada.")}
-                    />
-                  ))}
-                </ul>
-              )}
-              {learned.length > 0 && (
-                <div className="mt-4 rounded-xl bg-stone-50 p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Normal según tus decisiones</p>
-                  <ul className="space-y-1 text-sm text-stone-500">
-                    {learned.map((a) => (
-                      <li key={a.id} className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="flex items-center gap-2"><Avatar name={a.counterparty} size={22} /><span>{a.title} · {a.counterparty} · {colones(a.amountAtRisk)}</span></span>
-                        <button className="text-xs underline hover:text-ink" onClick={() => setEvidence(a)}>ver</button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {state.review.length > 0 && (
-                <div className="mt-4 rounded-xl border border-dashed border-line p-3">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Para revisar (confianza baja)</p>
-                  <ul className="space-y-1 text-sm">
-                    {state.review.map((r) => (
-                      <li key={r.emailId}>
-                        <button className="text-left hover:underline" onClick={() => setEmailId(r.emailId)}>{r.reason}</button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {closed.length > 0 && <p className="mt-3 text-xs text-muted">{closed.length} descartada{closed.length > 1 ? "s" : ""}.</p>}
-            </Card>
-
-            {/* Próximos y por cobrar */}
-            <div className="grid gap-5 md:grid-cols-2">
-              <Card>
-                <SectionTitle>Vence en los próximos 7 días</SectionTitle>
-                {state.upcoming.length === 0 ? <p className="text-sm text-muted">Nada en los próximos 7 días.</p> : (
-                  <ul className="space-y-2 text-sm">
-                    {state.upcoming.map((u) => (
-                      <li key={u.emailId} className="flex items-center justify-between gap-3">
-                        <button className="flex items-center gap-2 text-left hover:underline" onClick={() => setEmailId(u.emailId)}><Avatar name={u.counterparty} size={26} />{u.label}</button>
-                        <Badge tone={u.days <= 2 ? "red" : "amber"}>{u.days === 0 ? "hoy" : `${fecha(u.dueDate)}`}</Badge>
-                      </li>
+                ) : (
+                  <ul className="-mx-2 divide-y divide-line">
+                    {open.map((a) => (
+                      <AlertRow
+                        key={a.id}
+                        a={a}
+                        busy={busy}
+                        onEvidence={() => setEvidence(a)}
+                        onApprove={() => act(a.id + "ap", () => api(`/api/alerts/${a.id}/approve`, { method: "POST" }), "Correo preparado. No envié nada: revisalo y envialo vos.").then(() => setDraft(a))}
+                        onDraft={() => setDraft(a)}
+                        onNormal={() => {
+                          const reason = prompt("¿Por qué es normal? (opcional)", a.type === "monto_inusual" ? "Temporada alta" : "") ?? null;
+                          if (reason === null) return;
+                          act(a.id + "no", () => api(`/api/alerts/${a.id}/normal`, { method: "POST", body: JSON.stringify({ reason }) }), "Entendido. La próxima vez no te molesto con esto.");
+                        }}
+                        onDismiss={() => act(a.id + "ds", () => api(`/api/alerts/${a.id}/dismiss`, { method: "POST" }), "Alerta descartada.")}
+                      />
                     ))}
                   </ul>
                 )}
-              </Card>
-              <Card>
-                <SectionTitle>Te deben</SectionTitle>
-                {state.receivables.length === 0 ? <p className="text-sm text-muted">Nadie te debe, según tu correo.</p> : (
-                  <ul className="space-y-2 text-sm">
-                    {state.receivables.map((r) => (
-                      <li key={r.emailId} className="flex items-center justify-between gap-3">
-                        <button className="flex items-center gap-2 text-left hover:underline" onClick={() => setEmailId(r.emailId)}><Avatar name={r.counterparty} size={26} />{r.counterparty}</button>
-                        <span className="tabular font-medium">{colones(r.amount)} <Badge tone={statusTone(r.status)}>{r.status}</Badge></span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            </div>
-            </>)}
-
-            {view === "correo" && (<>
-            {/* Categorías */}
-            <Card>
-              <SectionTitle>Tu correo, ordenado</SectionTitle>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {state.categories.filter((c) => c.count > 0).map((c) => (
-                  <button key={c.category} type="button" onClick={() => setCat(c.category)} className="rounded-xl border border-line p-3 text-left transition-colors hover:border-ink/30 hover:bg-stone-50">
-                    <div className="flex items-center gap-1.5 text-sm font-medium"><span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLOR[c.category] }} aria-hidden />{c.label}</div>
-                    <div className="text-xs text-muted">{c.count} correo{c.count === 1 ? "" : "s"}</div>
-                    {c.category !== "ruido" && (
-                      <div className="mt-1 text-sm tabular">{c.pendingCount ? <>{colones(c.pendingTotal)} <span className="text-xs text-muted">pendiente</span></> : <span className="text-xs text-green">al día</span>}</div>
+                {(state.review.length > 0 || learned.length > 0 || closed.length > 0) && (
+                  <div className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
+                    {state.review.length > 0 && (
+                      <details className="group">
+                        <summary className="cursor-pointer list-none text-muted hover:text-ink">▸ Para revisar, confianza baja ({state.review.length})</summary>
+                        <ul className="mt-2 space-y-1 pl-4">
+                          {state.review.map((r) => <li key={r.emailId}><button className="text-left hover:underline" onClick={() => setEmailId(r.emailId)}>{r.reason}</button></li>)}
+                        </ul>
+                      </details>
                     )}
-                    {c.category === "ruido" && <div className="mt-1 text-xs text-muted">ignorado</div>}
-                  </button>
-                ))}
-              </div>
-            </Card>
-
-            {/* Documentos */}
-            <Card>
-              <SectionTitle aside={<span className="text-sm text-muted">{state.counts.invoices} facturas</span>}>Documentos</SectionTitle>
-              <div className="-mx-5 overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead className="text-xs uppercase text-muted">
-                    <tr className="border-b border-line">
-                      <th className="px-5 py-2 font-medium">De</th>
-                      <th className="py-2 font-medium">Qué es</th>
-                      <th className="py-2 text-right font-medium">Monto</th>
-                      <th className="py-2 pl-4 font-medium">Vence</th>
-                      <th className="py-2 font-medium">Estado</th>
-                      <th className="py-2 pr-5 font-medium">Hacienda</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.documents.filter((d) => d.category !== "ruido").map((d) => (
-                      <tr key={d.emailId} className="cursor-pointer border-b border-line/70 hover:bg-stone-50" onClick={() => setEmailId(d.emailId)}>
-                        <td className="px-5 py-2"><div className="flex items-center gap-2.5"><Avatar name={d.counterparty ?? d.from} size={30} /><div><div className="flex flex-wrap items-center gap-1.5 font-medium">{d.counterparty ?? d.from}<ChannelTag channel={d.channel} /></div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></div></div></td>
-                        <td className="py-2">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)}` : d.summary.slice(0, 48)}</td>
-                        <td className="py-2 text-right tabular">
-                          {colones(d.amount)}
-                          {d.amountSource && <div className="text-[10px] uppercase text-muted">{d.amountSource === "xml" ? "del XML" : d.amountSource === "ia" ? "leído por IA" : "leído del texto"}</div>}
-                        </td>
-                        <td className="py-2 pl-4">{fecha(d.dueDate)}</td>
-                        <td className="py-2"><Badge tone={statusTone(d.status)}>{d.status}</Badge></td>
-                        <td className="py-2 pr-5">{d.haciendaStatus && <Badge tone={haciendaTone(d.haciendaStatus)}>{haciendaLabel(d.haciendaStatus)}</Badge>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+                    {learned.length > 0 && (
+                      <details>
+                        <summary className="cursor-pointer list-none text-muted hover:text-ink">▸ Normal según tus decisiones ({learned.length})</summary>
+                        <ul className="mt-2 space-y-1 pl-4 text-stone-500">
+                          {learned.map((a) => (
+                            <li key={a.id} className="flex flex-wrap items-center gap-2">
+                              <Avatar name={a.counterparty} size={20} /><span>{a.title} · {a.counterparty} · {colones(a.amountAtRisk)}</span>
+                              <button className="text-xs underline hover:text-ink" onClick={() => setEvidence(a)}>ver</button>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    {closed.length > 0 && <p className="text-xs text-muted">{closed.length} descartada{closed.length > 1 ? "s" : ""}.</p>}
+                  </div>
+                )}
+              </Card>
             </>)}
-          </div>
-          )}
 
-          {/* Columna derecha */}
-          <aside className="min-w-0 space-y-5">
-            <Card>
-              <SectionTitle aside={<Button variant="ghost" disabled={!!busy} onClick={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")}>Enviar por WhatsApp</Button>}>Tu semana</SectionTitle>
-              {state.week.length === 0 ? <p className="text-sm text-muted">No hay nada urgente. ✅</p> : (
-                <ol className="space-y-3 text-sm">
-                  {state.week.slice(0, 7).map((w, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">{i + 1}</span>
-                      <div>
-                        <div className="font-medium">{w.title}{w.amount ? <span className="tabular font-normal text-muted"> · {colones(w.amount)}</span> : null}</div>
-                        <div className="text-xs text-muted">{w.why}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </Card>
-            <Card>
-              <SectionTitle>Lo que me enseñaste</SectionTitle>
-              {state.rules.length === 0 ? (
-                <p className="text-sm text-muted">Cuando marqués algo como normal, lo recuerdo aquí y dejo de molestarte con eso.</p>
+            {/* ------------------------------------------------ MENSAJES */}
+            {view === "correo" && (<>
+              <MailTabs categories={state.categories} cat={cat} onPick={setCat} whatsapp={state.counts.whatsapp} />
+              {cat !== "todos" ? (
+                <CategoryView
+                  category={cat === "whatsapp"
+                    ? {
+                        category: "whatsapp" as PulsoState["categories"][number]["category"], label: "WhatsApp", count: state.counts.whatsapp,
+                        pendingCount: state.documents.filter((d) => d.channel === "whatsapp" && (d.status === "pendiente" || d.status === "vencido") && d.amount).length,
+                        pendingTotal: state.documents.filter((d) => d.channel === "whatsapp" && (d.status === "pendiente" || d.status === "vencido")).reduce((t, d) => t + (d.amount ?? 0), 0),
+                      }
+                    : state.categories.find((c) => c.category === cat) ?? state.categories[0]}
+                  docs={state.documents.filter((d) => (cat === "whatsapp" ? d.channel === "whatsapp" : d.category === cat))}
+                  onOpen={setEmailId}
+                  onBack={() => setCat("todos")}
+                />
               ) : (
-                <ul className="space-y-2 text-sm">
-                  {state.rules.map((r) => (
-                    <li key={r.id} className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-medium">{r.counterparty} · {r.alertType.replace("_", " ")}</div>
-                        <div className="text-xs text-muted">{r.reason} · {fecha(r.createdAt)} · desde {r.createdFrom}{r.condition.maxRatio ? ` · hasta ${r.condition.maxRatio}× su promedio` : ""}</div>
-                      </div>
-                      <Button variant="ghost" onClick={() => act("rule", () => api(`/api/rules/${r.id}`, { method: "DELETE" }), "Regla borrada: vuelvo a avisarte.")}>Olvidar</Button>
-                    </li>
-                  ))}
-                </ul>
+                <Card>
+                  <SectionTitle aside={<span className="text-sm text-muted">{state.counts.invoices} facturas · {state.counts.emails} mensajes</span>}>Todos los mensajes</SectionTitle>
+                  <div className="-mx-5 overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-sm">
+                      <thead className="text-xs uppercase text-muted">
+                        <tr className="border-b border-line">
+                          <th className="px-5 py-2 font-medium">De</th>
+                          <th className="py-2 font-medium">Qué es</th>
+                          <th className="py-2 text-right font-medium">Monto</th>
+                          <th className="py-2 pl-4 font-medium">Vence</th>
+                          <th className="py-2 font-medium">Estado</th>
+                          <th className="py-2 pr-5 font-medium">Hacienda</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {state.documents.filter((d) => d.category !== "ruido").map((d) => (
+                          <tr key={d.emailId} className="cursor-pointer border-b border-line/70 hover:bg-stone-50" onClick={() => setEmailId(d.emailId)}>
+                            <td className="px-5 py-2"><div className="flex items-center gap-2.5"><Avatar name={d.counterparty ?? d.from} size={30} /><div><div className="flex flex-wrap items-center gap-1.5 font-medium">{d.counterparty ?? d.from}<ChannelTag channel={d.channel} /></div><div className="text-xs text-muted">{fecha(d.receivedAt)}</div></div></div></td>
+                            <td className="py-2">{d.kind === "factura" ? `Factura …${d.docNumber?.slice(-4)}` : d.summary.slice(0, 48)}</td>
+                            <td className="py-2 text-right tabular">
+                              {colones(d.amount)}
+                              {d.amountSource && <div className="text-[10px] uppercase text-muted">{d.amountSource === "xml" ? "del XML" : d.amountSource === "archivo" ? "del archivo" : d.amountSource === "ia" ? "leído por IA" : "leído del texto"}</div>}
+                            </td>
+                            <td className="py-2 pl-4">{fecha(d.dueDate)}</td>
+                            <td className="py-2"><Badge tone={statusTone(d.status)}>{d.status}</Badge></td>
+                            <td className="py-2 pr-5">{d.haciendaStatus && <Badge tone={haciendaTone(d.haciendaStatus)}>{haciendaLabel(d.haciendaStatus)}</Badge>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
               )}
-            </Card>
-          </aside>
+            </>)}
+
+            {/* ------------------------------------------------ PLATA */}
+            {view === "plata" && (<>
+              <Card>
+                <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <StatTile label="Por pagar" value={colones(owed)} hint={`${owed + paidTotal ? Math.round((100 * paidTotal) / (owed + paidTotal)) : 0} % ya pagado`} />
+                  <StatTile label="Te deben" value={colones(receivableTotal)} hint={receivableOverdue ? `${colones(receivableOverdue)} vencido` : "nada vencido"} />
+                  <StatTile label="Ventas de la semana" value={colones(weekSalesTotal)} hint={`${weekSales.length} cierres de caja`} />
+                </dl>
+              </Card>
+              <Card>
+                <SectionTitle aside={<span className="text-xs text-muted">sin contar lo ya pagado</span>}>Lo que vence, por semana</SectionTitle>
+                <BarChart data={state.charts.dueByWeek} empty="No tenés nada pendiente de pagar. ✅" />
+              </Card>
+              <Card>
+                <SectionTitle aside={<span className="text-xs text-muted">montos leídos del XML y del correo</span>}>Cómo está tu plata</SectionTitle>
+                <div className="grid gap-6 sm:grid-cols-3">
+                  <Donut title="Lo que debés, por tipo" slices={state.charts.debtByCategory} colors={CATEGORY_COLOR} measure="amount" center={colonesShort(state.charts.debtByCategory.reduce((t, x) => t + x.amount, 0))} centerLabel="por pagar" empty="No debés nada, según tu correo. ✅" />
+                  <Donut title="Estado de tus pagos" slices={state.charts.payments} colors={STATUS_COLOR} measure="amount" center={`${state.charts.payments.reduce((t, x) => t + x.count, 0)}`} centerLabel="cuentas" />
+                  <Donut title="Tus facturas en Hacienda" slices={state.charts.hacienda} colors={STATUS_COLOR} measure="count" center={`${state.charts.hacienda.reduce((t, x) => t + x.count, 0)}`} centerLabel="facturas" />
+                </div>
+              </Card>
+              <Card>
+                <SectionTitle aside={<span className="text-xs text-muted">de tus cierres de caja</span>}>Tus ventas</SectionTitle>
+                {state.charts.salesByDay.length === 0 ? (
+                  <p className="text-sm text-muted">Cuando lleguen los cierres de caja de tu sistema de facturación, vas a ver aquí lo que vendés cada día.</p>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_220px]">
+                    <BarChart
+                      data={state.charts.salesByDay}
+                      color="#008300"
+                      detail={(d) => {
+                        const day = state.charts.salesByDay.find((x) => x.key === d.key)!;
+                        return `${day.count} facturas · tarjeta ${colonesShort(day.card)} · efectivo ${colonesShort(day.cash)} · SINPE ${colonesShort(day.sinpe)}`;
+                      }}
+                    />
+                    <Donut title="Cómo te pagan" slices={state.charts.salesByMethod} colors={METHOD_COLOR} measure="amount" center={colonesShort(state.charts.salesByMethod.reduce((t, m) => t + m.amount, 0))} centerLabel="vendido" />
+                  </div>
+                )}
+              </Card>
+            </>)}
+
+            {/* ------------------------------------------------ RESERVAS y WHATSAPP */}
+            {view === "reservas" && <ReservationsView reservations={state.reservations} today={state.today} onOpen={setEmailId} />}
+            {view === "whatsapp" && (
+              <WhatsAppView
+                state={state}
+                busy={busy === "wa"}
+                onCall={(callId, outcome) => { api(`/api/calls/${callId}`, { method: "POST", body: JSON.stringify({ outcome }) }).then(() => refresh()).catch(() => undefined); }}
+                onReminder={(rid, action) => act("rem" + rid, () => api(`/api/reminders/${rid}`, { method: "POST", body: JSON.stringify({ action }) }), action === "borrar" ? "Recordatorio borrado." : "Ahí viene la llamada…")}
+                onSend={(body) => act("wa", () => api("/api/whatsapp/simulate", { method: "POST", body: JSON.stringify({ body }) }))}
+                onDigest={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")}
+              />
+            )}
+          </div>
+
+          {aside && <aside className="min-w-0 space-y-5">{aside}</aside>}
         </div>
       )}
 
@@ -601,46 +440,51 @@ function Metric({ label, value }: { label: string; value: string }) {
 function AlertRow({ a, busy, onEvidence, onApprove, onDraft, onNormal, onDismiss }: {
   a: AlertView; busy: string | null; onEvidence: () => void; onApprove: () => void; onDraft: () => void; onNormal: () => void; onDismiss: () => void;
 }) {
+  const [openRow, setOpenRow] = useState(false);
   const approved = a.action && a.action.status !== "pendiente" && a.action.status !== "descartada";
   const canNormal = a.type !== "rechazo_hacienda" && !(a.type === "duplicado" && a.confidence === "alta");
   const porCobrar = a.type === "vencido" && a.meta.porCobrar;
   return (
-    <li className={`rounded-2xl border bg-surface p-4 transition hover:shadow-md ${a.confidence === "alta" ? "border-red/20" : "border-line"}`}>
-      <div className="flex items-start gap-3">
-        <Avatar name={a.counterparty} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold">{a.title}</span>
-                <Badge tone={confTone(a.confidence)}>confianza {a.confidence}</Badge>
-                {a.notified && <Badge tone="green">avisado por WhatsApp</Badge>}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted">{a.counterparty}<ChannelTag channel={a.channel} /></div>
-            </div>
-            {a.amountAtRisk ? (
-              <div className="text-right">
-                <div className="tabular text-lg font-bold leading-tight">{colones(a.amountAtRisk)}</div>
-                <div className="text-[11px] text-muted">{porCobrar ? "por cobrar" : "en riesgo"}</div>
-              </div>
-            ) : null}
-          </div>
-          <p className="mt-2 text-sm">{a.explanation}</p>
-          <p className="mt-1 text-xs text-muted">Por qué: {a.reason}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {approved ? (
-              <Button variant="primary" onClick={onDraft}>✓ Correo listo · ver</Button>
-            ) : (
-              <Button variant="primary" disabled={busy === a.id + "ap"} onClick={onApprove}>{a.type === "vencido" && !porCobrar ? "Crear recordatorio" : "Preparar correo"}</Button>
-            )}
-            <Button onClick={onEvidence}>Ver evidencia</Button>
-            <span className="ml-auto flex gap-1">
-              {canNormal && <Button variant="ghost" disabled={busy === a.id + "no"} onClick={onNormal}>Es normal</Button>}
-              <Button variant="ghost" onClick={onDismiss}>Descartar</Button>
+    <li className="px-2 py-2.5">
+      <div className="flex items-center gap-3">
+        <button onClick={() => setOpenRow((v) => !v)} aria-expanded={openRow} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+          <Avatar name={a.counterparty} size={34} />
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${a.confidence === "alta" ? "bg-red" : "bg-amber"}`} title={`confianza ${a.confidence}`} aria-label={`confianza ${a.confidence}`} />
+              <span className="font-semibold">{a.title}</span>
+              <ChannelTag channel={a.channel} />
             </span>
+            <span className="block truncate text-sm text-muted">{a.counterparty}</span>
+          </span>
+          <span className="shrink-0 text-right">
+            <span className="tabular block font-bold">{colones(a.amountAtRisk)}</span>
+            <span className="block text-[11px] text-muted">{porCobrar ? "por cobrar" : "en riesgo"}</span>
+          </span>
+          <span className={`shrink-0 text-muted transition-transform ${openRow ? "rotate-180" : ""}`} aria-hidden>▾</span>
+        </button>
+        <span className="hidden shrink-0 sm:block">
+          {approved
+            ? <Button variant="secondary" onClick={onDraft}>✓ Correo listo</Button>
+            : <Button variant="primary" disabled={busy === a.id + "ap"} onClick={onApprove}>{a.type === "vencido" && !porCobrar ? "Recordatorio" : "Preparar correo"}</Button>}
+        </span>
+      </div>
+      {openRow && (
+        <div className="mt-2 rounded-xl bg-bg/70 p-3 text-sm sm:ml-[46px]">
+          <p>{a.explanation}</p>
+          <p className="mt-1 text-xs text-muted">Por qué: {a.reason} · confianza {a.confidence}{a.notified ? " · avisado por WhatsApp" : ""}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="sm:hidden">
+              {approved
+                ? <Button variant="secondary" onClick={onDraft}>✓ Correo listo</Button>
+                : <Button variant="primary" disabled={busy === a.id + "ap"} onClick={onApprove}>{a.type === "vencido" && !porCobrar ? "Crear recordatorio" : "Preparar correo"}</Button>}
+            </span>
+            <Button onClick={onEvidence}>Ver evidencia</Button>
+            {canNormal && <Button variant="ghost" disabled={busy === a.id + "no"} onClick={onNormal}>Es normal</Button>}
+            <Button variant="ghost" onClick={onDismiss}>Descartar</Button>
           </div>
         </div>
-      </div>
+      )}
     </li>
   );
 }
@@ -744,10 +588,6 @@ const IconHome = () => <Svg d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10" />;
 const IconMail = () => <Svg d="M3 6h18v12H3zM3 7l9 6 9-6" />;
 const IconChat = () => <Svg d="M4 20l1.4-4A8 8 0 1 1 8 18.6zM9 10h.01M12 10h.01M15 10h.01" />;
 const IconChart = () => <Svg d="M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z" />;
-const IconWallet = () => <Svg d="M3 7h15a3 3 0 0 1 3 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-3v3M16 13h2" />;
-const IconHand = () => <Svg d="M4 14h3l4 3h5a2 2 0 0 0 0-4h-4M7 14V9l5-4 5 4M2 20h20" />;
-const IconAlert = () => <Svg d="M12 3l10 18H2zM12 10v5M12 18h.01" />;
-const IconTrend = () => <Svg d="M3 17l6-6 4 4 8-8M15 7h6v6" />;
 const IconCalendar = () => <Svg d="M4 6h16v15H4zM4 10h16M9 3v4M15 3v4" />;
 
 const NAV: { key: View; label: string; icon: ReactNode }[] = [
@@ -835,26 +675,6 @@ function dayLabel(date: string, today: string) {
   const name = DAY_NAMES[new Date(date + "T00:00:00Z").getUTCDay()];
   const rel = date === today ? "Hoy" : date === addDaysIso(today, 1) ? "Mañana" : name[0].toUpperCase() + name.slice(1);
   return `${rel}${date === today || date === addDaysIso(today, 1) ? ` · ${name}` : ""} ${fecha(date).slice(0, 5)}`;
-}
-
-function TodayReservations({ reservations, today, onOpen }: { reservations: ReservationView[]; today: string; onOpen: () => void }) {
-  const todays = reservations.filter((r) => r.date === today && r.status !== "cancelada");
-  const next = todays[0];
-  const week = reservations.filter((r) => r.status !== "cancelada");
-  if (!week.length) return null;
-  return (
-    <button onClick={onOpen} className="card-soft flex w-full flex-wrap items-center gap-4 rounded-3xl bg-surface p-5 text-left transition hover:-translate-y-0.5">
-      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e8] text-2xl" aria-hidden>🍽️</span>
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted">Reservas de hoy</div>
-        <div className="text-lg font-bold">
-          {todays.length ? `${todays.length} ${todays.length === 1 ? "mesa" : "mesas"} · ${todays.reduce((t, r) => t + r.people, 0)} personas` : "Sin reservas hoy"}
-        </div>
-        {next && <div className="text-sm text-muted">Primera: {next.time ?? "sin hora"} · {next.name} ({next.people})</div>}
-      </div>
-      <span className="text-sm text-muted">{week.length} en los próximos 7 días · ver todas →</span>
-    </button>
-  );
 }
 
 function ReservationsView({ reservations, today, onOpen }: { reservations: ReservationView[]; today: string; onOpen: (emailId: string) => void }) {
@@ -969,5 +789,127 @@ function ChannelTag({ channel }: { channel?: string }) {
       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.4.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z" /></svg>
       WhatsApp
     </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Piezas del nuevo orden: número clave, "Hoy", vencimientos y te deben, Tu semana, lo aprendido.
+const STEP_NAMES: Record<string, string> = {
+  leer: "Leí", extraer: "Facturas y cierres", hacienda: "Hacienda", clasificar: "Ordené", reglas: "Revisé", aprendido: "Lo que me enseñaste", notificar: "WhatsApp",
+};
+
+function StatTile({ label, value, hint, onClick, tone }: { label: string; value: string; hint?: string; onClick?: () => void; tone?: "red" }) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag onClick={onClick} className={`rounded-2xl bg-bg/70 px-3 py-2.5 text-left ${onClick ? "transition hover:bg-accent-soft" : ""}`}>
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className={`tabular text-lg font-bold leading-tight ${tone === "red" ? "text-red" : ""}`}>{value}</dd>
+      {hint && <dd className="text-[11px] text-muted">{hint}</dd>}
+    </Tag>
+  );
+}
+
+function TodayRow({ icon, title, detail, onClick }: { icon: string; title: string; detail: string; onClick: () => void }) {
+  return (
+    <li>
+      <button onClick={onClick} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-stone-50">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-bg text-lg" aria-hidden>{icon}</span>
+        <span className="min-w-0 flex-1"><span className="block font-medium">{title}</span><span className="block truncate text-xs text-muted">{detail}</span></span>
+        <span className="text-muted" aria-hidden>›</span>
+      </button>
+    </li>
+  );
+}
+
+function TodayPanel({ state, onGo }: { state: PulsoState; onGo: (v: View) => void }) {
+  const todays = state.reservations.filter((r) => r.date === state.today && r.status !== "cancelada");
+  const pendingRem = state.reminders.filter((r) => r.status === "pendiente");
+  const nextDue = state.upcoming.find((u) => !u.porCobrar);
+  return (
+    <Card>
+      <SectionTitle>Hoy</SectionTitle>
+      <ul className="-mx-2 space-y-0.5">
+        <TodayRow icon="🍽️" title={todays.length ? `${todays.length} ${todays.length === 1 ? "mesa" : "mesas"} · ${todays.reduce((t, r) => t + r.people, 0)} personas` : "Sin reservas hoy"} detail={todays[0] ? `Primera: ${todays[0].time ?? "sin hora"} · ${todays[0].name}` : "Ver las próximas reservas"} onClick={() => onGo("reservas")} />
+        <TodayRow icon="⏰" title={pendingRem.length ? `${pendingRem.length} ${pendingRem.length === 1 ? "recordatorio" : "recordatorios"}` : "Sin recordatorios"} detail={pendingRem[0] ? pendingRem[0].task : "Escribile a Pulso: “acordame…”"} onClick={() => onGo("whatsapp")} />
+        <TodayRow icon="📅" title={nextDue ? `Vence ${nextDue.days === 0 ? "hoy" : `el ${fecha(nextDue.dueDate).slice(0, 5)}`}` : "Nada vence esta semana"} detail={nextDue ? nextDue.label : "Revisá tu plata"} onClick={() => onGo("plata")} />
+      </ul>
+    </Card>
+  );
+}
+
+function UpcomingAndReceivables({ state, onOpen }: { state: PulsoState; onOpen: (id: string) => void }) {
+  return (
+    <>
+      <Card>
+        <SectionTitle>Vence en 7 días</SectionTitle>
+        {state.upcoming.length === 0 ? <p className="text-sm text-muted">Nada en los próximos 7 días.</p> : (
+          <ul className="space-y-2 text-sm">
+            {state.upcoming.map((u) => (
+              <li key={u.emailId} className="flex items-center justify-between gap-3">
+                <button className="flex min-w-0 items-center gap-2 text-left hover:underline" onClick={() => onOpen(u.emailId)}><Avatar name={u.counterparty} size={26} /><span className="truncate">{u.label}</span></button>
+                <Badge tone={u.days <= 2 ? "red" : "amber"}>{u.days === 0 ? "hoy" : fecha(u.dueDate).slice(0, 5)}</Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card>
+        <SectionTitle>Te deben</SectionTitle>
+        {state.receivables.length === 0 ? <p className="text-sm text-muted">Nadie te debe, según tu correo.</p> : (
+          <ul className="space-y-2 text-sm">
+            {state.receivables.map((r) => (
+              <li key={r.emailId} className="flex items-center justify-between gap-3">
+                <button className="flex min-w-0 items-center gap-2 text-left hover:underline" onClick={() => onOpen(r.emailId)}><Avatar name={r.counterparty} size={26} /><span className="truncate">{r.counterparty}</span></button>
+                <span className="tabular shrink-0 font-medium">{colones(r.amount)} <Badge tone={statusTone(r.status)}>{r.status}</Badge></span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </>
+  );
+}
+
+function WeekCard({ week, busy, onSend }: { week: PulsoState["week"]; busy: boolean; onSend: () => void }) {
+  return (
+    <Card>
+      <SectionTitle aside={<Button variant="ghost" disabled={busy} onClick={onSend}>Enviar por WhatsApp</Button>}>Tu semana</SectionTitle>
+      {week.length === 0 ? <p className="text-sm text-muted">No hay nada urgente. ✅</p> : (
+        <ol className="space-y-3 text-sm">
+          {week.slice(0, 6).map((w, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">{i + 1}</span>
+              <div className="min-w-0">
+                <div className="font-medium">{w.title}{w.amount ? <span className="tabular font-normal text-muted"> · {colones(w.amount)}</span> : null}</div>
+                <div className="text-xs text-muted">{w.why}</div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
+  );
+}
+
+function LearnedCard({ rules, onForget }: { rules: PulsoState["rules"]; onForget: (id: string) => void }) {
+  return (
+    <Card>
+      <SectionTitle>Lo que me enseñaste</SectionTitle>
+      {rules.length === 0 ? (
+        <p className="text-sm text-muted">Cuando marqués algo como normal (o respondás “2”), lo recuerdo aquí y dejo de molestarte con eso.</p>
+      ) : (
+        <ul className="space-y-2 text-sm">
+          {rules.map((r) => (
+            <li key={r.id} className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-medium">{r.counterparty} · {r.alertType.replace("_", " ")}</div>
+                <div className="text-xs text-muted">{r.reason} · {fecha(r.createdAt)} · desde {r.createdFrom}{r.condition.maxRatio ? ` · hasta ${r.condition.maxRatio}× su promedio` : ""}</div>
+              </div>
+              <Button variant="ghost" onClick={() => onForget(r.id)}>Olvidar</Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

@@ -13,6 +13,8 @@ export interface LiveRunState {
   alerts: LiveAlert[];
   headline: string | null;
   notified?: boolean;
+  /** Ya terminó de animarse: al volver a Inicio se muestra completo, sin repetir. */
+  done?: boolean;
 }
 
 const STEP_LABEL: Record<string, string> = {
@@ -43,8 +45,8 @@ function Pending() {
 
 export function LiveRun({ run, onClose, onOpenAlert, onOpenWhatsApp }: { run: LiveRunState; onClose: () => void; onOpenAlert: (id: string) => void; onOpenWhatsApp?: () => void }) {
   // Pasos reales del pipeline, revelados uno por uno cuando llega la respuesta.
-  const [shown, setShown] = useState(0);
   const total = run.steps?.length ?? 0;
+  const [shown, setShown] = useState(run.done ? total : 0);
   useEffect(() => {
     if (!run.steps || shown >= total) return;
     const t = setTimeout(() => setShown((n) => n + 1), STEP_MS);
@@ -102,7 +104,9 @@ export function LiveRun({ run, onClose, onOpenAlert, onOpenWhatsApp }: { run: Li
 // ---------------------------------------------------------------- Preguntale a Pulso
 interface AskResult { intent: string; answer: string; title?: string; sources: { emailId: string; label: string; counterparty: string | null }[]; links?: { label: string; url: string }[]; disclaimer?: string }
 
-export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; onOpenEmail: (id: string) => void }) {
+export function AskPulso({ suggestions, onOpenEmail, compact = false }: { suggestions: string[]; onOpenEmail: (id: string) => void; compact?: boolean }) {
+  const [more, setMore] = useState(false);
+  const shown = compact && !more ? suggestions.slice(0, 4) : suggestions;
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ q: string; r: AskResult } | null>(null);
@@ -135,7 +139,7 @@ export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; 
         </span>
         <div>
           <h2 className="text-sm font-semibold">Preguntale a Pulso</h2>
-          <p className="text-xs text-muted">Te respondo con lo que llegó a tu correo y con las normas laborales y fiscales básicas, y te muestro de dónde lo saqué.</p>
+          <p className="text-xs text-muted">{compact ? "Tu correo, tu WhatsApp y normas básicas, con la fuente." : "Te respondo con lo que llegó a tu correo y con las normas laborales y fiscales básicas, y te muestro de dónde lo saqué."}</p>
         </div>
       </div>
 
@@ -152,7 +156,7 @@ export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; 
       </form>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {suggestions.map((s) => (
+        {shown.map((s) => (
           <button
             key={s}
             type="button"
@@ -163,6 +167,11 @@ export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; 
             {s}
           </button>
         ))}
+        {compact && suggestions.length > 4 && (
+          <button type="button" onClick={() => setMore((v) => !v)} className="rounded-full px-2 py-1 text-xs text-muted hover:text-ink">
+            {more ? "menos" : `+${suggestions.length - 4} más`}
+          </button>
+        )}
       </div>
 
       {error && <p className="mt-3 text-sm text-red">{error}</p>}

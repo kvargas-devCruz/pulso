@@ -52,9 +52,9 @@ npm run dev            # http://localhost:3000
 En el panel, tocá **"Probar con la bandeja de prueba"** (Restaurante La Fogata S.A., empresa ficticia).
 
 ### Guion de la demo
-1. **Probar con la bandeja de prueba** → semáforo en rojo, bitácora y 8 riesgos (incluye el cierre del datáfono del 17/11 que no cuadra).
+1. En el grupo **Demo** (arriba a la derecha) tocá **Cargar bandeja de prueba** (o "Probar con la bandeja de prueba") → semáforo en rojo, bitácora y 8 riesgos (incluye el cierre del datáfono del 17/11 que no cuadra).
 2. En "Monto fuera de lo normal" de **Verdulería La Huerta**, tocá **Es normal** (temporada navideña).
-3. Tocá **📩 Llegó un correo nuevo** → Pulso muestra lo que hace paso a paso y termina en el **posible duplicado** de Distribuidora de Carnes del Valle; la alerta llega al WhatsApp. También llega una reserva nueva para hoy (mirala en **Reservas**).
+3. En **Demo**, tocá **📩 Llegó un correo nuevo** → Pulso muestra lo que hace paso a paso y termina en el **posible duplicado** de Distribuidora de Carnes del Valle; la alerta llega al WhatsApp. También llega una reserva nueva para hoy (mirala en **Reservas**).
 4. **Ver evidencia** → las dos facturas lado a lado (misma clave, mismo consecutivo).
 5. En la sección **WhatsApp** respondé **1** → el correo al proveedor queda listo. No se envió nada.
 6. La nueva factura de temporada de Verdulería La Huerta quedó en gris: *normal según tu decisión*.
