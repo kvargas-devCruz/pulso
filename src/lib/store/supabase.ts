@@ -11,21 +11,35 @@ export class SupabaseStore implements Store {
   private db: SupabaseClient;
   private companyId: string | null = null;
 
-  constructor(url = process.env.NEXT_PUBLIC_SUPABASE_URL!, key = process.env.SUPABASE_SERVICE_ROLE_KEY!) {
+  constructor(
+    url = process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    key = process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    private company: Company = DEFAULT_COMPANY,
+  ) {
     this.db = createClient(url, key, { auth: { persistSession: false } });
+  }
+
+  private async findCompany(): Promise<string | null> {
+    const found = await this.db.from("companies").select("id").eq("tax_id", this.company.taxId).maybeSingle();
+    if (found.error) throw found.error;
+    return (found.data?.id as string | undefined) ?? null;
   }
 
   private async cid(): Promise<string> {
     if (this.companyId) return this.companyId;
-    const taxId = DEFAULT_COMPANY.taxId;
-    const found = await this.db.from("companies").select("id").eq("tax_id", taxId).maybeSingle();
-    if (found.error) throw found.error;
-    if (found.data) return (this.companyId = found.data.id as string);
+    const existing = await this.findCompany();
+    if (existing) return (this.companyId = existing);
+    const c = this.company;
     const created = await this.db
       .from("companies")
-      .insert({ name: DEFAULT_COMPANY.name, tax_id: taxId, owner_whatsapp: DEFAULT_COMPANY.ownerWhatsapp, notify_level: DEFAULT_COMPANY.notifyLevel })
+      .insert({ name: c.name, tax_id: c.taxId, owner_whatsapp: c.ownerWhatsapp, notify_level: c.notifyLevel })
       .select("id")
       .single();
+    // Otra instancia (serverless) pudo crearla al mismo tiempo: unique(tax_id) → leerla.
+    if (created.error?.code === "23505") {
+      const again = await this.findCompany();
+      if (again) return (this.companyId = again);
+    }
     if (created.error) throw created.error;
     return (this.companyId = created.data.id as string);
   }

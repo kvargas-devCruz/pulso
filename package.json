@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "eval": "tsx scripts/eval.ts",
+    "eval:supabase": "tsx --env-file=.env.local scripts/eval.ts --store=supabase",
     "generar-bandeja": "python3 scripts/generar_bandeja.py",
     "typecheck": "tsc --noEmit"
   },

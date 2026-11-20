@@ -4,6 +4,8 @@ import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
 import { LocalStore } from "../src/lib/store/local";
+import { SupabaseStore } from "../src/lib/store/supabase";
+import { DEFAULT_COMPANY, type Store } from "../src/lib/store/types";
 import { demoAdapter } from "../src/lib/ingest";
 import { runIngest, markNormal } from "../src/lib/engine/pipeline";
 import { buildState } from "../src/lib/state";
@@ -16,6 +18,7 @@ interface ExpectedEmail {
 interface ExpectedAlert { tipo: string; confianza: string; correos: string[] }
 
 const base = path.join(process.cwd(), "data", "bandeja-prueba");
+const EVAL_TAX_ID = "3101999999";
 const ok = (b: boolean) => (b ? "✅" : "❌");
 const normEstado = (s?: string) => (s ?? "").replace(" (contado)", "");
 
@@ -24,9 +27,19 @@ async function main() {
   const today: string = expected.hoy;
   process.env.PULSO_TODAY = today;
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "pulso-eval-"));
-  const store = new LocalStore(dir);
+  // --store=supabase: mismo flujo contra Postgres real, en una empresa de eval aislada.
+  const useSupabase = process.argv.includes("--store=supabase");
+  let store: Store;
+  if (useSupabase) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)
+      throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env.local");
+    store = new SupabaseStore(undefined, undefined, { ...DEFAULT_COMPANY, name: "Eval (Pulso)", taxId: EVAL_TAX_ID, ownerWhatsapp: null });
+    await store.reset();
+  } else {
+    store = new LocalStore(dir);
+  }
 
-  console.log(`\nPulso · eval · hoy ${today} · extracción de texto: ${claudeEnabled() ? "Claude" : "heurística (sin API key)"}\n`);
+  console.log(`\nPulso · eval · hoy ${today} · store: ${store.kind} · extracción de texto: ${claudeEnabled() ? "Claude" : "heurística (sin API key)"}\n`);
 
   // ---------------- Lote 1
   const r1 = await runIngest(store, demoAdapter("lote-1", base), today);
@@ -118,6 +131,7 @@ async function main() {
     diffs.forEach((d) => console.log("  - " + d));
   }
   await fs.rm(dir, { recursive: true, force: true });
+  if (useSupabase) await store.reset();
   const allFields = Object.values(fields).reduce((s, n) => s + n, 0);
   const allTotal = total * 5 + haciendaTotal;
   console.log(`\nPrecisión de extracción: ${Math.round((100 * allFields) / allTotal)}%\n`);

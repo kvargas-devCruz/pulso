@@ -119,13 +119,24 @@ alter table whatsapp_messages enable row level security;
 create policy "dueño de su empresa" on companies
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
-do $$
-declare t text;
-begin
-  foreach t in array array['runs','emails','extractions','learned_rules','alerts','actions','whatsapp_messages']
-  loop
-    execute format(
-      'create policy "solo mi empresa" on %I for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()))',
-      t);
-  end loop;
-end $$;
+-- Una política por tabla (sin bloque DO: el SQL Editor de Supabase no lo acepta).
+create policy "solo mi empresa" on runs
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+create policy "solo mi empresa" on emails
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+create policy "solo mi empresa" on extractions
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+create policy "solo mi empresa" on learned_rules
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+create policy "solo mi empresa" on alerts
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+create policy "solo mi empresa" on actions
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+create policy "solo mi empresa" on whatsapp_messages
+  for all using (company_id in (select id from companies where owner_id = auth.uid())) with check (company_id in (select id from companies where owner_id = auth.uid()));
+
+-- Permisos para la Data API. Los proyectos nuevos de Supabase no los dan automáticamente.
+-- service_role: el servidor de Pulso. authenticated: el dueño con Supabase Auth (filtrado por RLS).
+-- anon no recibe nada: sin sesión no se lee ni se escribe.
+grant usage on schema public to service_role, authenticated;
+grant select, insert, update, delete on all tables in schema public to service_role, authenticated;

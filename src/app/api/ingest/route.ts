@@ -2,6 +2,9 @@ import { demoAdapter, gmailAdapter, DEMO_LOTES, type DemoLote } from "@/lib/inge
 import { runIngest } from "@/lib/engine/pipeline";
 import { handle, store, today } from "@/lib/api";
 
+// Lote 1 hace varios viajes a Supabase (y a Claude cuando está activo).
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   return handle(async () => {
     const body = (await req.json().catch(() => ({}))) as { source?: string; lote?: string };
