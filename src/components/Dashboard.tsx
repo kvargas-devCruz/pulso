@@ -134,7 +134,7 @@ export function Dashboard() {
   return (
     <main className="mx-auto max-w-7xl px-4 pb-16 pt-5 sm:px-6">
       {/* Barra superior (logo · navegación · empresa y acciones) */}
-      <header className="card-soft mb-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-surface px-4 py-3 sm:px-5">
+      <header className="card-soft mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-surface px-4 py-3 sm:px-5">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7b6ff0] to-[#4a3fd0] text-white shadow-md shadow-accent/30">
             <PulseIcon className="h-6 w-6" />
@@ -185,13 +185,6 @@ export function Dashboard() {
           )}
         </div>
       </header>
-
-      <div className="mb-5 flex flex-wrap gap-2 px-1 text-xs">
-        <Badge tone={state.mode.claude ? "green" : "gray"}>{state.mode.claude ? "Claude activo" : "Extracción sin Claude (heurística)"}</Badge>
-        <Badge tone={state.mode.whatsapp ? "green" : "gray"}>{state.mode.whatsapp ? "WhatsApp real (Twilio)" : "WhatsApp simulado"}</Badge>
-        <Badge tone={state.mode.store === "supabase" ? "green" : "gray"}>{state.mode.store === "supabase" ? "Supabase" : "Datos locales"}</Badge>
-        <Badge tone="gray">Gmail: solo lectura + borradores · nunca envía</Badge>
-      </div>
 
       {state.ringing && view !== "whatsapp" && (
         <button onClick={() => setView("whatsapp")} className="mb-5 flex w-full items-center gap-3 rounded-2xl bg-[#075e54] px-4 py-3 text-left text-white shadow-lg">
