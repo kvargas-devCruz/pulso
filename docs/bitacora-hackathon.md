@@ -47,6 +47,12 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 - Reservas: Pulso lee el `.ics` de la plataforma ficticia ReservaYa y los pedidos que los clientes escriben directo (quedan "por confirmar"); una cancelación reemplaza a su reserva. Apartado "Reservas" (próximos 7 días por día), tarjeta "Reservas de hoy" en Inicio y la pregunta "¿Cuántas reservas tengo hoy?" (también por WhatsApp; entiende "mañana" y días de la semana).
 - `npm run eval`: **9/9 · 0 falsos positivos · extracción 100 % (58 correos)** · `npm test`: 23 pruebas.
 
+**Recordatorios con llamada (viernes en la noche):**
+- "Acordame el viernes a las 9 que debo pagar la CCSS" por WhatsApp → `reminder.ts` lee día, hora y tarea con código (hoy, mañana, días de la semana, 26/11, "en 5 minutos", "3 de la tarde"); si no entiende cuándo, pregunta. Lo relaciona con el correo (CCSS ₡1 248 750, vence el 26/11) y avisa si el recordatorio queda después del vencimiento.
+- A la hora, Pulso manda el WhatsApp y **llama**: en la demo, el celular del panel muestra la llamada entrante y la lee en voz alta (voz del navegador). Tarjeta "Tus recordatorios" con "Probar ahora".
+- Límite: sin cron, la llamada sale cuando el panel está abierto. Siguiente paso: Supabase `pg_cron` + Twilio Voice.
+- `npm test`: 25 pruebas · `npm run eval`: 9/9, 0 falsos positivos.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:

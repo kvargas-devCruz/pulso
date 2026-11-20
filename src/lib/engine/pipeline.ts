@@ -2,7 +2,7 @@
 // adaptador → guardar correo + hash → extraer → validar Hacienda → clasificar → reglas
 // (filtradas por lo aprendido) → explicar → acciones → notificar → bitácora.
 import { createHash } from "crypto";
-import type { Action, Alert, AlertDraft, EmailRecord, Extraction, HaciendaMessage, LearnedRule, LogStep, Run, WhatsAppMessage } from "../types";
+import type { Action, Alert, AlertDraft, EmailRecord, Extraction, HaciendaMessage, LearnedRule, LogStep, Reminder, Run, WhatsAppMessage } from "../types";
 import type { Store } from "../store";
 import type { SourceAdapter } from "../ingest";
 import { extractEmail, haciendaMessagesFromEmail, invoicesFromEmail, senderDomain, type Contact, type ExtractContext } from "./extract";
@@ -11,6 +11,7 @@ import { actionEmailId, draftAction, explain, whatsappAlertText, alertTitle } fr
 import { sendWhatsApp } from "../notify/whatsapp";
 import { colones, plural, todayCR } from "../format";
 import { answerQuestion, type AskAnswer } from "./ask";
+import { callScript, formatDue, isReminderRequest, parseReminder, relatedFor } from "./reminder";
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const nowIso = () => new Date().toISOString();
@@ -256,6 +257,58 @@ export async function deleteRule(store: Store, ruleId: string): Promise<void> {
   await store.upsertAlerts(alerts.map((a) => ({ ...a, status: "abierta", learnedRuleId: null })));
 }
 
+// ---------------------------------------------------------------- recordatorios y llamadas
+/** "Acordame el viernes a las 9 que debo pagar la CCSS" → recordatorio + respuesta para WhatsApp. */
+export async function createReminder(store: Store, text: string, nowMs: number, source: Reminder["source"], fallbackTask?: string, fallbackEmailId?: string | null): Promise<{ reminder: Reminder | null; reply: string }> {
+  const parsed = parseReminder(text, nowMs);
+  if (!parsed)
+    return { reminder: null, reply: 'Dale, ¿para cuándo te lo recuerdo? Decime, por ejemplo: "acordame el viernes a las 9 que debo pagar la CCSS" o "acordame en 10 minutos…".' };
+  const usesThis = /^(esto|eso|lo de esto)$/i.test(parsed.task.trim()) && fallbackTask;
+  const task = usesThis ? fallbackTask! : parsed.task;
+  const docs = joinDocs(await store.listEmails(), await store.listExtractions());
+  const rel = usesThis && fallbackEmailId ? null : relatedFor(task, docs, todayCR());
+  const reminder: Reminder = {
+    id: id("rm", text + nowMs),
+    task,
+    detail: rel?.detail ?? null,
+    dueAt: parsed.dueAt,
+    status: "pendiente",
+    emailId: rel?.emailId ?? fallbackEmailId ?? null,
+    source,
+    createdAt: new Date(nowMs).toISOString(),
+    firedAt: null,
+  };
+  // El mismo pedido dos veces no crea dos recordatorios.
+  const dup = (await store.listReminders()).find((r) => r.status === "pendiente" && r.task === reminder.task && r.dueAt === reminder.dueAt);
+  if (dup) return { reminder: dup, reply: `⏰ Ya lo tenía: te llamo ${formatDue(dup.dueAt, nowMs)} para recordarte *${dup.task}*.` };
+  await store.upsertReminder(reminder);
+  // Si el recordatorio queda después del vencimiento, avisarlo (la fecha sale del correo, no se adivina).
+  const dueDay = new Date(Date.parse(reminder.dueAt) - 6 * 3600_000).toISOString().slice(0, 10);
+  const late = rel?.dueDate && rel.dueDate < dueDay ? `\n\n⚠️ Ojo: eso vence el ${rel.dueDate.slice(8, 10)}/${rel.dueDate.slice(5, 7)}, antes de tu recordatorio. ¿Querés que te avise antes? Decime "acordame el ${rel.dueDate.slice(8, 10)}/${rel.dueDate.slice(5, 7)} a las 9…".` : "";
+  return { reminder, reply: `⏰ Listo: te llamo ${formatDue(reminder.dueAt, nowMs)} para recordarte *${task}*${reminder.detail ? ` (${reminder.detail})` : ""}.${late}` };
+}
+
+/** Dispara los recordatorios vencidos: WhatsApp + llamada (en la demo, la llamada suena en el panel). */
+export async function fireDueReminders(store: Store, nowMs: number): Promise<number> {
+  const due = (await store.listReminders()).filter((r) => r.status === "pendiente" && Date.parse(r.dueAt) <= nowMs);
+  for (const r of due) {
+    const firedAt = new Date(nowMs).toISOString();
+    await store.upsertReminder({ ...r, status: "hecho", firedAt });
+    const body = `⏰ *Recordatorio:* ${r.task}${r.detail ? ` (${r.detail})` : ""}.`;
+    const res = await sendCapped(store, body);
+    await store.addMessage({ id: id("wa", "rem" + r.id), direction: "saliente", kind: "recordatorio", body, status: res.status, alertId: null, createdAt: firedAt });
+    await store.addMessage({ id: `call_${r.id}`, direction: "saliente", kind: "llamada", body: callScript(r.task, r.detail), status: "sonando", alertId: null, createdAt: firedAt });
+  }
+  return due.length;
+}
+
+/** El dueño contesta o rechaza la llamada. */
+export async function answerCall(store: Store, callId: string, outcome: "atendida" | "perdida"): Promise<void> {
+  const call = (await store.listMessages()).find((m) => m.id === callId && m.kind === "llamada");
+  if (!call) throw new Error("No encontré esa llamada.");
+  await store.addMessage({ ...call, status: outcome });
+}
+
 /** "Preguntale a Pulso" (R21): mismo flujo para el panel y WhatsApp; los números salen de código. */
 export async function ask(store: Store, question: string, today: string): Promise<AskAnswer> {
   const docs = joinDocs(await store.listEmails(), await store.listExtractions());
@@ -291,6 +344,9 @@ export async function handleReply(store: Store, text: string): Promise<string> {
       }
     } else if (msg === "ver" || msg.startsWith("ver ")) {
       reply = target ? `🔎 ${alertTitle(target)} · ${target.counterparty}: ${appUrl()}/?alerta=${target.id}` : `🔎 Tu panel: ${appUrl()}`;
+    } else if (isReminderRequest(text)) {
+      const last = target ?? alerts.find((a) => a.id === lastAlertMsg?.alertId);
+      reply = (await createReminder(store, text, Date.now(), "whatsapp", last ? `${alertTitle(last).toLowerCase()} de ${last.counterparty}` : undefined, last?.emailIds[0] ?? null)).reply;
     } else {
       const a = await ask(store, text, todayCR());
       reply = a.intent === "no_entendi"

@@ -9,7 +9,7 @@ Pulso es un agente que vigila el correo de una pyme costarricense: extrae factur
 - Decisiones técnicas: `docs/adr/`
 - Datos de prueba: `data/bandeja-prueba/lote-1/` (58 correos de un restaurante ficticio ya en el buzón: facturas, cierres del datáfono y de caja, y 10 reservas) y `lote-2/` (3 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
 - Respuesta esperada: `data/bandeja-prueba/esperado.json` (para `npm run eval`) y `resumen.md` (legible). "Hoy" en la demo es el 20/11/2026.
-- Esquema de la base de datos: `supabase/migrations/0001_init.sql` y `0002_cierres.sql`
+- Esquema de la base de datos: `supabase/migrations/0001_init.sql`, `0002_cierres.sql` y `0003_recordatorios.sql`
 - Orden de trabajo y prompts por bloque: `docs/PLAYBOOK.md`
 
 Si algo no está claro en el PRD o en los ADRs, preguntá antes de inventar.
@@ -41,6 +41,7 @@ src/
       rules.ts                # reglas puras con confianza + reglas aprendidas
       status.ts               # semáforo, próximos 7 días, Tu semana
       explain.ts              # explicaciones, borradores y texto de WhatsApp
+      reminder.ts             # "acordame…": fecha, hora y tarea con código; la llamada sale cuando vence
       ask.ts                  # "Preguntale a Pulso": la pregunta elige qué calcular; los números salen de código
     store/                    # Store: SupabaseStore (producción) | LocalStore (demo)
     notify/whatsapp.ts        # Twilio + validación de firma

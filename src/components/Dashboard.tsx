@@ -193,6 +193,14 @@ export function Dashboard() {
         <Badge tone="gray">Gmail: solo lectura + borradores · nunca envía</Badge>
       </div>
 
+      {state.ringing && view !== "whatsapp" && (
+        <button onClick={() => setView("whatsapp")} className="mb-5 flex w-full items-center gap-3 rounded-2xl bg-[#075e54] px-4 py-3 text-left text-white shadow-lg">
+          <span className="text-2xl [animation:pulso-beat_1.2s_ease-in-out_infinite]" aria-hidden>📞</span>
+          <span className="flex-1"><strong>Pulso te está llamando</strong> · recordatorio que pediste por WhatsApp</span>
+          <span className="rounded-full bg-[#25d366] px-3 py-1 text-sm font-semibold">Contestar</span>
+        </button>
+      )}
+
       {empty && live ? (
         <div className="mx-auto max-w-xl"><LiveRun run={live} onClose={() => setLive(null)} onOpenAlert={openAlert} onOpenWhatsApp={() => setView("whatsapp")} /></div>
       ) : empty ? (
@@ -205,6 +213,8 @@ export function Dashboard() {
             <WhatsAppView
               state={state}
               busy={busy === "wa"}
+              onCall={(callId, outcome) => { api(`/api/calls/${callId}`, { method: "POST", body: JSON.stringify({ outcome }) }).then(() => refresh()).catch(() => undefined); }}
+              onReminder={(rid, action) => act("rem" + rid, () => api(`/api/reminders/${rid}`, { method: "POST", body: JSON.stringify({ action }) }), action === "borrar" ? "Recordatorio borrado." : "Ahí viene la llamada…")}
               onSend={(body) => act("wa", () => api("/api/whatsapp/simulate", { method: "POST", body: JSON.stringify({ body }) }))}
               onDigest={() => act("dg", () => api("/api/whatsapp/digest", { method: "POST" }), "Te mandé “Tu semana” por WhatsApp.")}
             />
@@ -774,13 +784,16 @@ function MailTabs({ categories, cat, onPick }: { categories: PulsoState["categor
 
 // ---------------------------------------------------------------------------
 // WhatsApp en su propio apartado: el celular del dueño y cómo se usa.
-function WhatsAppView({ state, busy, onSend, onDigest }: { state: PulsoState; busy: boolean; onSend: (body: string) => void; onDigest: () => void }) {
+function WhatsAppView({ state, busy, onSend, onDigest, onCall, onReminder }: {
+  state: PulsoState; busy: boolean; onSend: (body: string) => void; onDigest: () => void;
+  onCall: (callId: string, outcome: "atendida" | "perdida") => void; onReminder: (id: string, action: "probar" | "borrar") => void;
+}) {
   const sent = state.messages.filter((m) => m.direction === "saliente" && m.kind === "alerta").length;
   const replies = state.messages.filter((m) => m.direction === "entrante").length;
   return (
     <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       <div className="min-w-0">
-        <Phone messages={state.messages} real={state.mode.whatsapp} busy={busy} onSend={onSend} />
+        <Phone messages={state.messages} real={state.mode.whatsapp} busy={busy} onSend={onSend} ringing={state.ringing} onCall={onCall} />
       </div>
       <div className="min-w-0 space-y-5">
         <Card>
@@ -790,9 +803,11 @@ function WhatsAppView({ state, busy, onSend, onDigest }: { state: PulsoState; bu
             <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-bold text-accent">1</span><span><strong>Preparar el correo</strong> para resolverlo. Queda como borrador: nada se envía sin que lo revisés.</span></li>
             <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-bold text-accent">2</span><span><strong>Es normal.</strong> Pulso lo aprende y no te vuelve a molestar con casos iguales (nunca con un rechazo de Hacienda).</span></li>
             <li className="flex gap-3"><span className="flex h-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft px-1.5 text-xs font-bold text-accent">VER</span><span>Te manda el link a la evidencia.</span></li>
+            <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent" aria-hidden>⏰</span><span><strong>Acordame…</strong>: “acordame el viernes a las 9 que debo pagar la CCSS”. A esa hora Pulso te <strong>llama</strong> y te lo recuerda con el monto.</span></li>
             <li className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent" aria-hidden>?</span><span>Cualquier otra cosa es una <strong>pregunta</strong>: “¿Quién me debe?”, “¿Cuadró el datáfono ayer?”.</span></li>
           </ul>
         </Card>
+        <Reminders reminders={state.reminders} onAction={onReminder} />
         <Card>
           <SectionTitle aside={<Button variant="ghost" onClick={onDigest}>Enviar “Tu semana”</Button>}>Resumen</SectionTitle>
           <dl className="grid grid-cols-3 gap-3 text-sm">
@@ -901,5 +916,47 @@ function ReservationsView({ reservations, today, onOpen }: { reservations: Reser
         );
       })}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recordatorios que el dueño pidió por WhatsApp.
+const CR_MS = 6 * 3600_000;
+function dueLabel(iso: string) {
+  const t = new Date(Date.parse(iso) - CR_MS);
+  const days = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+  return `${days[t.getUTCDay()]} ${String(t.getUTCDate()).padStart(2, "0")}/${String(t.getUTCMonth() + 1).padStart(2, "0")} · ${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function Reminders({ reminders, onAction }: { reminders: PulsoState["reminders"]; onAction: (id: string, action: "probar" | "borrar") => void }) {
+  const pending = reminders.filter((r) => r.status === "pendiente");
+  const done = reminders.filter((r) => r.status === "hecho").slice(-3).reverse();
+  return (
+    <Card>
+      <SectionTitle aside={<span className="text-xs text-muted">{pending.length} pendiente{pending.length === 1 ? "" : "s"}</span>}>Tus recordatorios</SectionTitle>
+      {reminders.length === 0 ? (
+        <p className="text-sm text-muted">Escribile a Pulso en el celular, por ejemplo: <em>“acordame en 1 minuto que debo pagar la CCSS”</em>. A esa hora te llama.</p>
+      ) : (
+        <ul className="space-y-2">
+          {pending.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line p-3">
+              <span className="text-lg" aria-hidden>⏰</span>
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">{r.task}</div>
+                <div className="text-xs text-muted">{dueLabel(r.dueAt)}{r.detail ? ` · ${r.detail}` : ""}</div>
+              </div>
+              <Button variant="secondary" onClick={() => onAction(r.id, "probar")}>📞 Probar ahora</Button>
+              <Button variant="ghost" onClick={() => onAction(r.id, "borrar")}>Borrar</Button>
+            </li>
+          ))}
+          {done.map((r) => (
+            <li key={r.id} className="flex items-center gap-3 rounded-xl bg-stone-50 p-3 text-sm text-muted">
+              <span aria-hidden>✓</span>
+              <span className="min-w-0 flex-1"><span className="line-through">{r.task}</span> · te llamé {dueLabel(r.firedAt ?? r.dueAt)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

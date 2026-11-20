@@ -203,11 +203,24 @@ export interface Action {
 export interface WhatsAppMessage {
   id: string;
   direction: "saliente" | "entrante";
-  kind: "alerta" | "resumen" | "respuesta";
+  kind: "alerta" | "resumen" | "respuesta" | "recordatorio" | "llamada";
   body: string;
-  status: "enviado" | "simulado" | "fallido" | "recibido" | "tope_diario";
+  status: "enviado" | "simulado" | "fallido" | "recibido" | "tope_diario" | "sonando" | "atendida" | "perdida";
   alertId: string | null;
   createdAt: string;
+}
+
+/** Recordatorio que el dueño pide por WhatsApp ("acordame el viernes a las 9 que debo pagar la CCSS"). */
+export interface Reminder {
+  id: string;
+  task: string; // "pagar la CCSS"
+  detail: string | null; // lo que Pulso sabe de eso, leído del correo: "₡1 248 750, vence el 26/11/2026"
+  dueAt: string; // ISO (UTC)
+  status: "pendiente" | "hecho" | "borrado";
+  emailId: string | null; // correo relacionado, si lo hay
+  source: "whatsapp" | "panel";
+  createdAt: string;
+  firedAt: string | null;
 }
 
 export interface LogStep {

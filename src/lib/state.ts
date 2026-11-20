@@ -11,9 +11,9 @@ import { SUGGESTED_QUESTIONS } from "./engine/ask";
 import { whatsappConfigured } from "./notify/whatsapp";
 
 export async function buildState(store: Store, today: string) {
-  const [company, emails, exts, alerts, rules, actions, messages, runs] = await Promise.all([
+  const [company, emails, exts, alerts, rules, actions, messages, runs, reminders] = await Promise.all([
     store.getCompany(), store.listEmails(), store.listExtractions(), store.listAlerts(),
-    store.listRules(), store.listActions(), store.listMessages(), store.listRuns(),
+    store.listRules(), store.listActions(), store.listMessages(), store.listRuns(), store.listReminders(),
   ]);
   const docs = joinDocs(emails, exts);
   const next = upcoming(docs, today);
@@ -85,6 +85,8 @@ export async function buildState(store: Store, today: string) {
     charts: companyCharts(docs, today),
     suggestions: SUGGESTED_QUESTIONS,
     reservations: upcomingReservations(docs, today),
+    reminders: reminders.filter((r) => r.status !== "borrado").sort((a, b) => a.dueAt.localeCompare(b.dueAt)),
+    ringing: [...messages].reverse().find((m) => m.kind === "llamada" && m.status === "sonando") ?? null,
     documents,
     rules,
     messages,

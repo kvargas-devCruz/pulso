@@ -2,7 +2,7 @@
 // en Vercel el disco no es persistente, por eso en producción se usa Supabase.
 import { promises as fs } from "fs";
 import path from "path";
-import type { Action, Alert, Company, EmailRecord, Extraction, LearnedRule, Run, WhatsAppMessage } from "../types";
+import type { Action, Alert, Company, EmailRecord, Extraction, LearnedRule, Reminder, Run, WhatsAppMessage } from "../types";
 import { DEFAULT_COMPANY, type Store } from "./types";
 
 interface DB {
@@ -14,9 +14,10 @@ interface DB {
   actions: Action[];
   messages: WhatsAppMessage[];
   runs: Run[];
+  reminders: Reminder[];
 }
 
-const empty = (): DB => ({ company: { ...DEFAULT_COMPANY }, emails: [], extractions: [], alerts: [], rules: [], actions: [], messages: [], runs: [] });
+const empty = (): DB => ({ company: { ...DEFAULT_COMPANY }, emails: [], extractions: [], alerts: [], rules: [], actions: [], messages: [], runs: [], reminders: [] });
 
 function upsertBy<T>(list: T[], items: T[], key: (x: T) => string): T[] {
   const map = new Map(list.map((x) => [key(x), x]));
@@ -89,7 +90,10 @@ export class LocalStore implements Store {
   upsertAction(a: Action) { return this.mutate((db) => { db.actions = upsertBy(db.actions, [a], (x) => x.id); }); }
 
   async listMessages() { return (await this.read()).messages; }
-  addMessage(m: WhatsAppMessage) { return this.mutate((db) => { db.messages.push(m); }); }
+  addMessage(m: WhatsAppMessage) { return this.mutate((db) => { db.messages = upsertBy(db.messages, [m], (x) => x.id); }); }
+
+  async listReminders() { return (await this.read()).reminders; }
+  upsertReminder(r: Reminder) { return this.mutate((db) => { db.reminders = upsertBy(db.reminders, [r], (x) => x.id); }); }
 
   async listRuns() { return (await this.read()).runs; }
   saveRun(r: Run) { return this.mutate((db) => { db.runs = upsertBy(db.runs, [r], (x) => x.id); }); }

@@ -6,6 +6,8 @@ import { parseAmounts, parseDueDate } from "./extract";
 import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleSettlementMismatch, ruleUnusualAmounts, type Doc } from "./rules";
 import { parseSettlementCsv, parseSettlementText } from "./settlement";
 import { parseReservationIcs, parseReservationText } from "./reservation";
+import { parseReminder, formatDue } from "./reminder";
+import { createReminder, fireDueReminders, answerCall } from "./pipeline";
 import { companyCharts } from "./status";
 import { answerQuestion } from "./ask";
 import { joinDocs, runIngest } from "./pipeline";
@@ -258,4 +260,37 @@ describe("reservas", () => {
     expect(r).toMatchObject({ date: "2026-11-26", time: "18:30", people: 20, deposit: 100000, status: "por_confirmar", fromFile: false });
     expect(parseReservationText("Factura", "Les reservamos el derecho de cobrar intereses.", "X")).toBeNull();
   });
+});
+
+describe("recordatorios y llamada", () => {
+  const now = Date.parse("2026-11-20T20:30:00Z"); // viernes 20/11, 2:30 p. m. en Costa Rica
+  it("entiende día, hora y tarea en español de Costa Rica", () => {
+    const r = parseReminder("Acordame el viernes a las 9 que debo pagar la CCSS", now)!;
+    expect(formatDue(r.dueAt, now)).toBe("el viernes 27/11 a las 09:00");
+    expect(r.task).toBe("pagar la CCSS");
+    expect(formatDue(parseReminder("recordame mañana a las 10 de la mañana pagar a la Cervecería", now)!.dueAt, now)).toBe("mañana a las 10:00");
+    expect(formatDue(parseReminder("avisame el 26/11 a las 3 de la tarde que vence el INS", now)!.dueAt, now)).toBe("el jueves 26/11 a las 15:00");
+    expect(Date.parse(parseReminder("acordame en 1 minuto que tengo que pagar la CCSS", now)!.dueAt) - now).toBe(60_000);
+    expect(parseReminder("acordame pagar la luz", now)).toBeNull(); // sin fecha: Pulso pregunta
+    expect(parseReminder("¿Cuánto debo esta semana?", now)).toBeNull();
+  });
+
+  it("lo relaciona con lo que llegó al correo y llama a la hora", async () => {
+    process.env.PULSO_USE_CLAUDE = "0";
+    process.env.PULSO_TODAY = "2026-11-20";
+    const store = new LocalStore(await fs.mkdtemp(path.join(os.tmpdir(), "pulso-rem-")));
+    await runIngest(store, demoAdapter("lote-1", path.join(process.cwd(), "data", "bandeja-prueba")), "2026-11-20");
+    const t0 = Date.now();
+    const { reminder, reply } = await createReminder(store, "acordame en 1 minuto que debo pagar la CCSS", t0, "whatsapp");
+    expect(reminder!.detail).toBe("₡1 248 750, vence el 26/11/2026");
+    expect(reply).toContain("pagar la CCSS");
+    expect(await fireDueReminders(store, t0 + 30_000)).toBe(0); // todavía no
+    expect(await fireDueReminders(store, t0 + 61_000)).toBe(1);
+    const call = (await store.listMessages()).find((m) => m.kind === "llamada")!;
+    expect(call.status).toBe("sonando");
+    expect(call.body).toContain("pagar la CCSS: ₡1 248 750");
+    await answerCall(store, call.id, "atendida");
+    expect((await store.listMessages()).find((m) => m.id === call.id)!.status).toBe("atendida");
+    expect((await store.listReminders())[0].status).toBe("hecho");
+  }, 30000);
 });

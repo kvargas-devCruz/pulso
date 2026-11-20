@@ -1,10 +1,14 @@
 // Almacenamiento en Supabase (fuente de verdad en producción, ADR-0001).
 // Usa la service role key: solo se ejecuta en el servidor (rutas API).
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Action, Alert, Company, EmailRecord, Extraction, LearnedRule, Run, WhatsAppMessage } from "../types";
+import type { Action, Alert, Company, EmailRecord, Extraction, LearnedRule, Reminder, Run, WhatsAppMessage } from "../types";
 import { DEFAULT_COMPANY, type Store } from "./types";
 
 type Row = { data: unknown };
+const isMissingTable = (err: unknown) => {
+  const e = err as { code?: string; message?: string };
+  return e?.code === "42P01" || e?.code === "PGRST205" || /reminders/.test(e?.message ?? "") && /does not exist|could not find/i.test(e?.message ?? "");
+};
 
 export class SupabaseStore implements Store {
   kind = "supabase" as const;
@@ -120,6 +124,15 @@ export class SupabaseStore implements Store {
     await this.upsert("whatsapp_messages", [{ id: m.id, company_id: await this.cid(), direction: m.direction, status: m.status, created_at: m.createdAt, data: m }]);
   }
 
+  async listReminders() {
+    // Si la migración 0003 todavía no está aplicada, el panel sigue funcionando sin recordatorios.
+    try { return await this.all<Reminder>("reminders", "due_at"); }
+    catch (err) { if (isMissingTable(err)) return []; throw err; }
+  }
+  async upsertReminder(r: Reminder) {
+    await this.upsert("reminders", [{ id: r.id, company_id: await this.cid(), due_at: r.dueAt, status: r.status, created_at: r.createdAt, data: r }]);
+  }
+
   listRuns() { return this.all<Run>("runs", "started_at"); }
   async saveRun(r: Run) {
     await this.upsert("runs", [{ id: r.id, company_id: await this.cid(), source: r.source, label: r.label, started_at: r.startedAt, finished_at: r.finishedAt, data: r }]);
@@ -127,9 +140,9 @@ export class SupabaseStore implements Store {
 
   async reset() {
     const company_id = await this.cid();
-    for (const t of ["whatsapp_messages", "actions", "alerts", "learned_rules", "extractions", "emails", "runs"]) {
+    for (const t of ["reminders", "whatsapp_messages", "actions", "alerts", "learned_rules", "extractions", "emails", "runs"]) {
       const { error } = await this.db.from(t).delete().eq("company_id", company_id);
-      if (error) throw error;
+      if (error && !(t === "reminders" && isMissingTable(error))) throw error;
     }
   }
 }

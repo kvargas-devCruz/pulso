@@ -26,6 +26,7 @@
 - **Borradores con aprobación:** correo al proveedor, cobro al cliente o recordatorio, listos para copiar o abrir en tu correo.
 - **Tu semana**, lo que te deben, tu correo ordenado por categoría y la **bitácora** de lo que hizo el agente, que se ve **en vivo, paso a paso**, cada vez que llega correo.
 - **Próximas reservas** (restaurantes): Pulso lee las reservas que llegan por correo (de la plataforma de reservas, con su `.ics`, y de clientes que escriben directo), las agrupa por día con personas, notas y anticipos, y marca las canceladas y las que faltan confirmar.
+- **Recordatorios con llamada:** por WhatsApp le decís "acordame el viernes a las 9 que debo pagar la CCSS". Pulso lo relaciona con lo que llegó al correo (₡1 248 750, vence el 26/11), te avisa si el recordatorio queda después del vencimiento y, a esa hora, **te llama** (en la demo, la llamada suena en el celular del panel y te lee el recordatorio en voz alta).
 - **Preguntale a Pulso** (en el panel o por WhatsApp): "¿Cuánto debo esta semana?", "¿Cuadró el datáfono ayer?", "¿Cuánto le debo a Cementos?". La respuesta se calcula con código y muestra los correos de donde salió.
 
 ---
@@ -69,7 +70,7 @@ Copiá `.env.example` a `.env.local` y completá lo que quieras usar:
 | `APP_URL` | Links dentro de los mensajes de WhatsApp | `http://localhost:3000` |
 | `PULSO_TODAY` | Fijar el "hoy" (la demo usa 2026-11-20) | Fecha actual de Costa Rica |
 
-**Supabase:** en el SQL Editor de tu proyecto (**New → Snippet**, vacío) pegá y ejecutá `supabase/migrations/0001_init.sql` y después `0002_cierres.sql` (cada una en su propio Snippet). Incluye los `grant` que los proyectos nuevos de Supabase ya no dan solos a la Data API. Para comprobar que el Store de Supabase funciona: `npm run eval:supabase` (usa `.env.local` y una empresa de eval aparte).
+**Supabase:** en el SQL Editor de tu proyecto (**New → Snippet**, vacío) pegá y ejecutá `supabase/migrations/0001_init.sql`, después `0002_cierres.sql` y `0003_recordatorios.sql` (cada una en su propio Snippet). Incluye los `grant` que los proyectos nuevos de Supabase ya no dan solos a la Data API. Para comprobar que el Store de Supabase funciona: `npm run eval:supabase` (usa `.env.local` y una empresa de eval aparte).
 **WhatsApp (Twilio Sandbox):** uní tu celular al sandbox y configurá el webhook "When a message comes in" a `https://TU-APP/api/whatsapp/webhook` (POST).
 
 ### Pruebas
