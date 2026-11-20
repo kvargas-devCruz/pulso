@@ -1,9 +1,9 @@
 {
   "id": "lote-1-45",
-  "para": "facturas@ferreteriaelroble.test",
-  "remitente": "FacturaÁgil <cierres@facturaagil.test>",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "MesaFácil POS <cierres@mesafacil.test>",
   "fecha": "2026-11-18T20:41:00-06:00",
-  "asunto": "Cierre de caja 18/11/2026 · Ferretería El Roble S.A.",
+  "asunto": "Cierre de caja 18/11/2026 · Restaurante La Fogata S.A.",
   "cuerpo": "Cierre de caja del 18/11/2026.\n\nFacturas emitidas: 41\nEfectivo: ₡236 000\nTarjeta: ₡289 300\nSINPE Móvil: ₡102 000\nTotal vendido: ₡627 300\n\nDetalle en el archivo adjunto.\n(FICTICIO: simulado para la demo.)",
   "adjuntos": [
     {

@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-58",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "Datacorp CR <eventos@datacorp.test>",
+  "fecha": "2026-11-19T10:39:00-06:00",
+  "asunto": "Cena de fin de año: reserva para 20 personas",
+  "cuerpo": "Buenas tardes:\n\nQueremos reservar para 20 personas el jueves 26/11/2026 a las 18:30 para nuestra cena de fin de año. Podemos dejar un adelanto de ₡100 000.\n\nSaludos,\nRecursos Humanos, Datacorp CR\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

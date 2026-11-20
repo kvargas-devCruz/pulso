@@ -4,17 +4,18 @@
 import type { Alert } from "../types";
 import type { Doc } from "./rules";
 import { alertTitle } from "./explain";
-import { payState, payableDocs, upcoming } from "./status";
+import { payState, payableDocs, upcoming, upcomingReservations } from "./status";
 import { colones, daysBetween, fecha, plural } from "../format";
 
 export interface AskSource { emailId: string; label: string; counterparty: string | null }
 export interface AskAnswer {
-  intent: "cuadre" | "hacienda" | "ventas" | "me_deben" | "proveedor" | "debo" | "riesgos" | "no_entendi";
+  intent: "cuadre" | "hacienda" | "ventas" | "me_deben" | "proveedor" | "debo" | "riesgos" | "reservas" | "no_entendi";
   answer: string;
   sources: AskSource[];
 }
 
 export const SUGGESTED_QUESTIONS = [
+  "¿Cuántas reservas tengo hoy?",
   "¿Cuánto debo esta semana?",
   "¿Quién me debe?",
   "¿Cuadró el datáfono ayer?",
@@ -28,7 +29,16 @@ const addDays = (iso: string, n: number) => new Date(Date.parse(iso + "T00:00:00
 const src = (d: Doc, label?: string): AskSource => ({ emailId: d.email.id, label: label ?? `${d.ext.counterparty ?? "Correo"} · ${fecha(d.email.receivedAt)}`, counterparty: d.ext.counterparty });
 
 /** "hoy", "ayer", "anteayer" o "17/11" → fecha ISO; null si la pregunta no trae fecha. */
+const WEEKDAYS = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+
 function dateIn(q: string, today: string): string | null {
+  if (/\bpasado manana\b/.test(q)) return addDays(today, 2);
+  if (/\bmanana\b/.test(q)) return addDays(today, 1);
+  const wd = WEEKDAYS.findIndex((w) => new RegExp(`\\b${w}\\b`).test(q));
+  if (wd >= 0) {
+    const now = new Date(today + "T00:00:00Z").getUTCDay();
+    return addDays(today, (wd - now + 7) % 7);
+  }
   if (/\banteayer\b|\bantier\b/.test(q)) return addDays(today, -2);
   if (/\bayer\b/.test(q)) return addDays(today, -1);
   if (/\bhoy\b/.test(q)) return today;
@@ -54,6 +64,29 @@ export function answerQuestion(question: string, docs: Doc[], alerts: Alert[], t
   const q = norm(question);
   const open = alerts.filter((a) => a.status === "abierta");
   const byId = new Map(docs.map((d) => [d.email.id, d]));
+
+  // ------------------------------------------------ reservas
+  if (/reserv|\bmesas?\b|cuantas personas|cuanta gente|comensales/.test(q)) {
+    const asked = dateIn(q, today);
+    const all = upcomingReservations(docs, today, 14);
+    const list = all.filter((r) => (asked ? r.date === asked : r.date <= addDays(today, 6)));
+    const active = list.filter((r) => r.status !== "cancelada");
+    const cancelled = list.length - active.length;
+    const when = asked ? (asked === today ? "hoy" : asked === addDays(today, 1) ? "mañana" : `el ${fecha(asked)}`) : "en los próximos 7 días";
+    const sources = active.map((r) => ({ emailId: r.emailId, label: `Reserva de ${r.name}`, counterparty: r.name }));
+    if (!active.length)
+      return { intent: "reservas", answer: `No tenés reservas ${when}.${cancelled ? ` (${plural(cancelled, "se canceló una", "se cancelaron " + cancelled)}).` : ""}`, sources };
+    const people = active.reduce((t, r) => t + r.people, 0);
+    const lines = active.slice(0, 8).map((r) => `${asked ? "" : `${fecha(r.date).slice(0, 5)} `}${r.time ?? "sin hora"} ${r.name} (${r.people})${r.status === "por_confirmar" ? " por confirmar" : ""}`);
+    const deposits = active.reduce((t, r) => t + (r.deposit ?? 0), 0);
+    return {
+      intent: "reservas",
+      answer: `${when[0].toUpperCase() + when.slice(1)} tenés ${plural(active.length, "reserva", "reservas")} para ${plural(people, "persona", "personas")}: ${lines.join("; ")}${active.length > 8 ? "…" : ""}.`
+        + (deposits ? ` Anticipos: ${colones(deposits)}.` : "")
+        + (cancelled ? ` ${cancelled === 1 ? "Una se canceló." : `${cancelled} se cancelaron.`}` : ""),
+      sources,
+    };
+  }
 
   // ------------------------------------------------ ¿cuadró el datáfono?
   if (/datafono|cierre|\bcaja\b|cuadro\b/.test(q)) {

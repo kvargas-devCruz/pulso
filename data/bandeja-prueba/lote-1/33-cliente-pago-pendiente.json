@@ -1,9 +1,9 @@
 {
   "id": "lote-1-33",
-  "para": "facturas@ferreteriaelroble.test",
-  "remitente": "Condominio Las Lomas <admin@condolaslomas.test>",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "Eventos Corporativos Altamira <admin@eventosaltamira.test>",
   "fecha": "2026-11-14T10:59:00-06:00",
   "asunto": "RE: Factura 00100001010000000245",
-  "cuerpo": "Buenas tardes,\n\nRecibimos su factura 00100001010000000245 por ₡560 000 (vencía el 04/11). Disculpen el atraso; la estaremos pagando a fin de mes.\n\nAdministración Condominio Las Lomas",
+  "cuerpo": "Buenas tardes,\n\nRecibimos su factura 00100001010000000245 por ₡560 000 del catering (vencía el 04/11). Disculpen el atraso; la estaremos pagando a fin de mes.\n\nAdministración Eventos Corporativos Altamira",
   "adjuntos": []
 }

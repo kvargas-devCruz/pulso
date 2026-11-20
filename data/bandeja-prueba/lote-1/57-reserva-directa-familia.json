@@ -1,0 +1,9 @@
+{
+  "id": "lote-1-57",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "Luis Fernández <luisf@correo.test>",
+  "fecha": "2026-11-18T10:53:00-06:00",
+  "asunto": "Reserva para el domingo",
+  "cuerpo": "Hola, buenas.\n\nQuisiera reservar mesa para 8 personas el domingo 22/11/2026 a las 12:30. Es un almuerzo familiar.\n\nMuchas gracias,\nLuis Fernández\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": []
+}

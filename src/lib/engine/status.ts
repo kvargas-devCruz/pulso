@@ -235,3 +235,34 @@ export function companyCharts(docs: Doc[], today: string, maxSlices = 5): Compan
 
   return { dueByWeek, salesByDay, salesByMethod, debtByCategory, payments, hacienda };
 }
+
+// ---------------------------------------------------------------------------
+// Próximas reservas: una por código (si llega la cancelación, gana el correo más nuevo).
+export interface UpcomingReservation {
+  emailId: string;
+  code: string | null;
+  date: string;
+  time: string | null;
+  people: number;
+  name: string;
+  phone: string | null;
+  notes: string | null;
+  deposit: number | null;
+  status: "confirmada" | "cancelada" | "por_confirmar";
+}
+
+export function upcomingReservations(docs: Doc[], today: string, days = 7): UpcomingReservation[] {
+  const last = new Date(Date.parse(today + "T00:00:00Z") + days * 86_400_000).toISOString().slice(0, 10);
+  const byKey = new Map<string, UpcomingReservation>();
+  for (const d of [...docs].sort((a, b) => a.email.receivedAt.localeCompare(b.email.receivedAt))) {
+    const r = d.ext.reservation;
+    if (!r) continue;
+    byKey.set(r.code ?? d.email.id, {
+      emailId: d.email.id, code: r.code, date: r.date, time: r.time, people: r.people, name: r.name,
+      phone: r.phone, notes: r.notes, deposit: r.deposit, status: r.status,
+    });
+  }
+  return [...byKey.values()]
+    .filter((r) => r.date >= today && r.date <= last)
+    .sort((a, b) => (a.date + (a.time ?? "")).localeCompare(b.date + (b.time ?? "")));
+}

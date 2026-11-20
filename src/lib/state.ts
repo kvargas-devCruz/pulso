@@ -3,7 +3,7 @@ import type { Store } from "./store";
 import type { Category } from "./types";
 import { joinDocs, priority } from "./engine/pipeline";
 import { toReview } from "./engine/rules";
-import { semaphore, upcoming, yourWeek, categoryLabel, companyCharts } from "./engine/status";
+import { semaphore, upcoming, yourWeek, categoryLabel, companyCharts, upcomingReservations } from "./engine/status";
 import { alertTitle } from "./engine/explain";
 import { senderName } from "./engine/extract";
 import { claudeEnabled } from "./engine/claude";
@@ -84,6 +84,7 @@ export async function buildState(store: Store, today: string) {
     categories,
     charts: companyCharts(docs, today),
     suggestions: SUGGESTED_QUESTIONS,
+    reservations: upcomingReservations(docs, today),
     documents,
     rules,
     messages,

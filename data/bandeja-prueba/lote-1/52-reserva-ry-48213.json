@@ -1,0 +1,15 @@
+{
+  "id": "lote-1-52",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "ReservaYa <reservas@reservaya.test>",
+  "fecha": "2026-11-17T11:40:00-06:00",
+  "asunto": "Nueva reserva · 21/11/2026 19:30 · 14 personas",
+  "cuerpo": "Tenés una nueva reserva confirmada en Restaurante La Fogata S.A.:\n\nNombre: María Solano\nPersonas: 14\nFecha: 21/11/2026\nHora: 19:30\nTeléfono: 8800-0000 (ficticio)\nNotas: Cumpleaños, terraza\nAnticipo: ₡50 000\nCódigo: RY-48213\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": [
+    {
+      "nombre": "reserva-RY-48213.ics",
+      "tipo": "text/calendar",
+      "contenido": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ReservaYa//ES\nMETHOD:PUBLISH\nBEGIN:VEVENT\nUID:RY-48213@reservaya.test\nDTSTART;TZID=America/Costa_Rica:20261121T193000\nSUMMARY:Reserva María Solano · 14 personas\nX-PARTY-SIZE:14\nDESCRIPTION:Personas: 14\\nTeléfono: 8800-0000 (ficticio)\\nNotas: Cumpleaños, terraza\\nAnticipo: 50000\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR\n"
+    }
+  ]
+}

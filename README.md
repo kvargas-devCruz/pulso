@@ -25,6 +25,7 @@
 - **Aprende de tus decisiones:** "es normal" crea una regla acotada al proveedor; los casos parecidos quedan en gris sin molestar. Nunca aprende a ignorar un rechazo de Hacienda.
 - **Borradores con aprobación:** correo al proveedor, cobro al cliente o recordatorio, listos para copiar o abrir en tu correo.
 - **Tu semana**, lo que te deben, tu correo ordenado por categoría y la **bitácora** de lo que hizo el agente, que se ve **en vivo, paso a paso**, cada vez que llega correo.
+- **Próximas reservas** (restaurantes): Pulso lee las reservas que llegan por correo (de la plataforma de reservas, con su `.ics`, y de clientes que escriben directo), las agrupa por día con personas, notas y anticipos, y marca las canceladas y las que faltan confirmar.
 - **Preguntale a Pulso** (en el panel o por WhatsApp): "¿Cuánto debo esta semana?", "¿Cuadró el datáfono ayer?", "¿Cuánto le debo a Cementos?". La respuesta se calcula con código y muestra los correos de donde salió.
 
 ---
@@ -45,15 +46,15 @@ cd pulso
 npm install
 npm run dev            # http://localhost:3000
 ```
-En el panel, tocá **"Probar con la bandeja de prueba"** (Ferretería El Roble S.A., empresa ficticia).
+En el panel, tocá **"Probar con la bandeja de prueba"** (Restaurante La Fogata S.A., empresa ficticia).
 
 ### Guion de la demo
 1. **Probar con la bandeja de prueba** → semáforo en rojo, bitácora y 8 riesgos (incluye el cierre del datáfono del 17/11 que no cuadra).
-2. En "Monto fuera de lo normal" de **Maderas El Pinar**, tocá **Es normal** (temporada navideña).
-3. Tocá **📩 Llegó un correo nuevo** → Pulso muestra lo que hace paso a paso y termina en el **posible duplicado** de Distribuidora del Valle; la alerta llega al WhatsApp.
+2. En "Monto fuera de lo normal" de **Verdulería La Huerta**, tocá **Es normal** (temporada navideña).
+3. Tocá **📩 Llegó un correo nuevo** → Pulso muestra lo que hace paso a paso y termina en el **posible duplicado** de Distribuidora de Carnes del Valle; la alerta llega al WhatsApp. También llega una reserva nueva para hoy (mirala en **Reservas**).
 4. **Ver evidencia** → las dos facturas lado a lado (misma clave, mismo consecutivo).
 5. En la sección **WhatsApp** respondé **1** → el correo al proveedor queda listo. No se envió nada.
-6. La nueva factura de temporada de Maderas El Pinar quedó en gris: *normal según tu decisión*.
+6. La nueva factura de temporada de Verdulería La Huerta quedó en gris: *normal según tu decisión*.
 
 **Reiniciar** borra los datos de prueba para volver a empezar.
 
@@ -95,7 +96,7 @@ Aprendizaje: la factura de temporada del lote 2 quedó como normal_aprendido
 
 **Flujo de trabajo:**
 1. **Criterio primero.** Antes de escribir código definí el producto en [`PRD.md`](PRD.md), las decisiones técnicas en [`docs/adr/`](docs/adr/) y las reglas para el agente en [`CLAUDE.md`](CLAUDE.md).
-2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 50 correos ficticios con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
+2. **Datos de prueba con respuesta esperada.** [`scripts/generar_bandeja.py`](scripts/generar_bandeja.py) genera 61 correos ficticios de un restaurante con casos plantados y [`esperado.json`](data/bandeja-prueba/esperado.json). Así el agente verifica su propio trabajo con `npm run eval`.
 3. **Construcción por bloques**, cada uno verificado con build, pruebas y eval antes de seguir (ver [`docs/bitacora-hackathon.md`](docs/bitacora-hackathon.md)).
 4. **Revisión visual:** el agente abrió el panel en un navegador sin interfaz, ejecutó el flujo completo de la demo y revisó capturas de escritorio y celular (así encontró y corrigió un desborde horizontal en el celular).
 5. **Revisión humana** de cada decisión contra el PRD y los ADRs.

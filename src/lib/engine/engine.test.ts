@@ -5,6 +5,7 @@ import { parseFactura, parseMensajeHacienda } from "./xml";
 import { parseAmounts, parseDueDate } from "./extract";
 import { matchLearnedRule, learnedConditionFor, ruleDuplicates, ruleSettlementMismatch, ruleUnusualAmounts, type Doc } from "./rules";
 import { parseSettlementCsv, parseSettlementText } from "./settlement";
+import { parseReservationIcs, parseReservationText } from "./reservation";
 import { companyCharts } from "./status";
 import { answerQuestion } from "./ask";
 import { joinDocs, runIngest } from "./pipeline";
@@ -31,7 +32,7 @@ describe("lector de XML (ADR-0002)", () => {
     expect(inv.subtotal + inv.tax).toBeCloseTo(inv.total, 2);
     expect(inv.saleCondition).toBe("credito");
     expect(inv.dueDate).toBe("2026-12-05");
-    expect(inv.issuerName).toBe("Distribuidora Ferretera del Valle S.A.");
+    expect(inv.issuerName).toBe("Distribuidora de Carnes del Valle S.A.");
   });
   it("lee el rechazo de Hacienda", async () => {
     const mh = parseMensajeHacienda((await attachment("lote-1", "14-", "MH"))!)!;
@@ -233,9 +234,28 @@ describe("Preguntale a Pulso (respuestas con código y fuente)", () => {
     const debo = ask("¿Cuánto debo esta semana?");
     expect(debo.answer).toContain("₡425 000 vencido");
     expect(debo.answer).toContain("CCSS ₡1 248 750");
-    expect(ask("¿Quién me debe?").answer).toContain("Condominio Las Lomas: ₡560 000");
-    expect(ask("¿Hay facturas rechazadas por Hacienda?").answer).toContain("Eléctricos Volta S.A., ₡109 610");
-    expect(ask("¿Cuánto le debo a Cementos?").intent).toBe("proveedor");
+    expect(ask("¿Quién me debe?").answer).toContain("Eventos Corporativos Altamira: ₡560 000");
+    expect(ask("¿Hay facturas rechazadas por Hacienda?").answer).toContain("Mariscos del Pacífico S.A., ₡109 610");
+    expect(ask("¿Cuánto le debo a la Cervecería?").intent).toBe("proveedor");
     expect(ask("¿cuál es el clima?").intent).toBe("no_entendi");
+    const hoy = ask("¿Cuántas reservas tengo hoy?");
+    expect(hoy.intent).toBe("reservas");
+    expect(hoy.answer).toMatch(/^Hoy tenés 2 reservas para 6 personas/);
   }, 30000);
+});
+
+describe("reservas", () => {
+  it("lee el .ics de la plataforma y la cancelación", async () => {
+    const files = await fs.readdir(path.join(process.cwd(), "data", "bandeja-prueba", "lote-1"));
+    const read = async (suffix: string) => JSON.parse(await fs.readFile(demo("lote-1", files.find((f) => f.endsWith(suffix))!), "utf8"));
+    const r = parseReservationIcs((await read("reserva-ry-48213.json")).adjuntos[0].contenido)!;
+    expect(r).toMatchObject({ code: "RY-48213", date: "2026-11-21", time: "19:30", people: 14, name: "María Solano", deposit: 50000, status: "confirmada", fromFile: true });
+    expect(r.notes).toBe("Cumpleaños, terraza");
+    expect(parseReservationIcs((await read("reserva-ry-48220-cancelada.json")).adjuntos[0].contenido)!.status).toBe("cancelada");
+  });
+  it("lee un pedido de reserva escrito por un cliente (queda por confirmar)", () => {
+    const r = parseReservationText("Cena de fin de año", "Queremos reservar para 20 personas el jueves 26/11/2026 a las 18:30. Podemos dejar un adelanto de ₡100 000.", "Datacorp CR")!;
+    expect(r).toMatchObject({ date: "2026-11-26", time: "18:30", people: 20, deposit: 100000, status: "por_confirmar", fromFile: false });
+    expect(parseReservationText("Factura", "Les reservamos el derecho de cobrar intereses.", "X")).toBeNull();
+  });
 });

@@ -144,7 +144,7 @@ export function AskPulso({ suggestions, onOpenEmail }: { suggestions: string[]; 
           ref={input}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Ej.: ¿Cuánto le debo a Cementos?"
+          placeholder="Ej.: ¿Reservas del sábado? · ¿Cuánto le debo a la Cervecería?"
           aria-label="Tu pregunta"
           className="min-w-0 flex-1 rounded-xl border border-line bg-bg/60 px-3 py-2 text-sm outline-none transition focus:border-accent focus:bg-surface"
         />

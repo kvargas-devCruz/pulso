@@ -9,7 +9,7 @@ import { BarChart, CATEGORY_COLOR, Donut, KpiCard, METHOD_COLOR, STATUS_COLOR, c
 
 type AlertView = PulsoState["alerts"][number];
 type DocView = PulsoState["documents"][number];
-type View = "inicio" | "correo" | "plata" | "whatsapp";
+type View = "inicio" | "correo" | "plata" | "whatsapp" | "reservas";
 
 const LIGHT = {
   rojo: { dot: "bg-red", soft: "bg-red-soft", text: "text-red", label: "Rojo" },
@@ -199,7 +199,9 @@ export function Dashboard() {
         <EmptyState busy={busy === "lote-1"} onStart={() => ingest("lote-1")} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {view === "whatsapp" ? (
+          {view === "reservas" ? (
+            <ReservationsView reservations={state.reservations} today={state.today} onOpen={setEmailId} />
+          ) : view === "whatsapp" ? (
             <WhatsAppView
               state={state}
               busy={busy === "wa"}
@@ -381,6 +383,7 @@ export function Dashboard() {
             </>)}
 
             {view === "inicio" && (<>
+            <TodayReservations reservations={state.reservations} today={state.today} onOpen={() => setView("reservas")} />
             <AskPulso suggestions={state.suggestions} onOpenEmail={setEmailId} />
 
             {/* Alertas: un feed de "esto necesita tu revisión" */}
@@ -646,7 +649,7 @@ function EmptyState({ onStart, busy }: { onStart: () => void; busy: boolean }) {
       </p>
       <div className="mt-6 flex flex-col items-center gap-2">
         <Button variant="primary" disabled={busy} onClick={onStart}>{busy ? "Leyendo tu correo…" : "Probar con la bandeja de prueba"}</Button>
-        <span className="text-xs text-muted">Ferretería El Roble S.A. · empresa ficticia · 36 correos de noviembre</span>
+        <span className="text-xs text-muted">Restaurante La Fogata S.A. · empresa ficticia · 58 correos de noviembre</span>
       </div>
     </Card>
   );
@@ -741,6 +744,7 @@ const NAV: { key: View; label: string; icon: ReactNode }[] = [
   { key: "inicio", label: "Inicio", icon: <IconHome /> },
   { key: "correo", label: "Correo", icon: <IconMail /> },
   { key: "plata", label: "Plata", icon: <IconChart /> },
+  { key: "reservas", label: "Reservas", icon: <IconCalendar /> },
   { key: "whatsapp", label: "WhatsApp", icon: <IconChat /> },
 ];
 
@@ -803,6 +807,99 @@ function WhatsAppView({ state, busy, onSend, onDigest }: { state: PulsoState; bu
           </p>
         </Card>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Reservas (restaurante): próximas 7 noches, agrupadas por día.
+type ReservationView = PulsoState["reservations"][number];
+const DAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const addDaysIso = (iso: string, n: number) => new Date(Date.parse(iso + "T00:00:00Z") + n * 86_400_000).toISOString().slice(0, 10);
+function dayLabel(date: string, today: string) {
+  const name = DAY_NAMES[new Date(date + "T00:00:00Z").getUTCDay()];
+  const rel = date === today ? "Hoy" : date === addDaysIso(today, 1) ? "Mañana" : name[0].toUpperCase() + name.slice(1);
+  return `${rel}${date === today || date === addDaysIso(today, 1) ? ` · ${name}` : ""} ${fecha(date).slice(0, 5)}`;
+}
+
+function TodayReservations({ reservations, today, onOpen }: { reservations: ReservationView[]; today: string; onOpen: () => void }) {
+  const todays = reservations.filter((r) => r.date === today && r.status !== "cancelada");
+  const next = todays[0];
+  const week = reservations.filter((r) => r.status !== "cancelada");
+  if (!week.length) return null;
+  return (
+    <button onClick={onOpen} className="card-soft flex w-full flex-wrap items-center gap-4 rounded-3xl bg-surface p-5 text-left transition hover:-translate-y-0.5">
+      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e8] text-2xl" aria-hidden>🍽️</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted">Reservas de hoy</div>
+        <div className="text-lg font-bold">
+          {todays.length ? `${todays.length} ${todays.length === 1 ? "mesa" : "mesas"} · ${todays.reduce((t, r) => t + r.people, 0)} personas` : "Sin reservas hoy"}
+        </div>
+        {next && <div className="text-sm text-muted">Primera: {next.time ?? "sin hora"} · {next.name} ({next.people})</div>}
+      </div>
+      <span className="text-sm text-muted">{week.length} en los próximos 7 días · ver todas →</span>
+    </button>
+  );
+}
+
+function ReservationsView({ reservations, today, onOpen }: { reservations: ReservationView[]; today: string; onOpen: (emailId: string) => void }) {
+  const days = [...new Set(reservations.map((r) => r.date))];
+  const active = reservations.filter((r) => r.status !== "cancelada");
+  const people = active.reduce((t, r) => t + r.people, 0);
+  const pending = active.filter((r) => r.status === "por_confirmar").length;
+  const deposits = active.reduce((t, r) => t + (r.deposit ?? 0), 0);
+  return (
+    <div className="min-w-0 space-y-5">
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-2 text-xl font-bold"><span aria-hidden>🍽️</span> Próximas reservas</h2>
+            <p className="text-sm text-muted">Leídas de tu correo: la plataforma de reservas y los clientes que te escriben directo.</p>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
+            <Metric label="Reservas" value={String(active.length)} />
+            <Metric label="Personas" value={String(people)} />
+            <Metric label="Por confirmar" value={String(pending)} />
+            <Metric label="Anticipos" value={deposits ? colones(deposits) : "₡0"} />
+          </dl>
+        </div>
+      </Card>
+      {days.length === 0 && <Card><p className="text-sm text-muted">No tenés reservas en los próximos 7 días.</p></Card>}
+      {days.map((day) => {
+        const list = reservations.filter((r) => r.date === day);
+        const act = list.filter((r) => r.status !== "cancelada");
+        return (
+          <Card key={day} className="overflow-hidden p-0!">
+            <div className={`flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-3 ${day === today ? "bg-accent-soft" : ""}`}>
+              <h3 className="font-semibold">{dayLabel(day, today)}</h3>
+              <span className="text-sm text-muted">{act.length} {act.length === 1 ? "reserva" : "reservas"} · {act.reduce((t, r) => t + r.people, 0)} personas</span>
+            </div>
+            <ul className="divide-y divide-line">
+              {list.map((r) => {
+                const cancelled = r.status === "cancelada";
+                return (
+                  <li key={r.emailId}>
+                    <button onClick={() => onOpen(r.emailId)} className={`flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-left transition-colors hover:bg-stone-50 ${cancelled ? "opacity-55" : ""}`}>
+                      <span className="tabular w-12 shrink-0 text-lg font-bold">{r.time ?? "—"}</span>
+                      <Avatar name={r.name} size={34} />
+                      <div className="min-w-0 flex-1 basis-40">
+                        <div className={`font-medium ${cancelled ? "line-through" : ""}`}>{r.name}</div>
+                        {r.notes && <div className="text-xs text-muted">{r.notes}</div>}
+                      </div>
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                        <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-sm font-semibold tabular">👥 {r.people}</span>
+                        {r.deposit ? <Badge tone="green">anticipo {colones(r.deposit)}</Badge> : null}
+                        {r.status === "por_confirmar" && <Badge tone="amber">por confirmar</Badge>}
+                        {cancelled && <Badge tone="gray">cancelada</Badge>}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        );
+      })}
     </div>
   );
 }

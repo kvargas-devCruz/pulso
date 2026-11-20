@@ -1,0 +1,15 @@
+{
+  "id": "lote-1-55",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "ReservaYa <reservas@reservaya.test>",
+  "fecha": "2026-11-19T11:19:00-06:00",
+  "asunto": "Nueva reserva · 27/11/2026 20:00 · 2 personas",
+  "cuerpo": "Tenés una nueva reserva confirmada en Restaurante La Fogata S.A.:\n\nNombre: Laura Méndez\nPersonas: 2\nFecha: 27/11/2026\nHora: 20:00\nTeléfono: 8800-0000 (ficticio)\nNotas: Alergia a los mariscos\nCódigo: RY-48231\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": [
+    {
+      "nombre": "reserva-RY-48231.ics",
+      "tipo": "text/calendar",
+      "contenido": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ReservaYa//ES\nMETHOD:PUBLISH\nBEGIN:VEVENT\nUID:RY-48231@reservaya.test\nDTSTART;TZID=America/Costa_Rica:20261127T200000\nSUMMARY:Reserva Laura Méndez · 2 personas\nX-PARTY-SIZE:2\nDESCRIPTION:Personas: 2\\nTeléfono: 8800-0000 (ficticio)\\nNotas: Alergia a los mariscos\\nAnticipo: 0\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR\n"
+    }
+  ]
+}

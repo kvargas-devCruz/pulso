@@ -45,6 +45,7 @@ export type ItemKind =
   | "cobro_pendiente"
   | "cierre_datafono"
   | "cierre_ventas"
+  | "reserva"
   | "ruido";
 
 export type ItemStatus = "pendiente" | "pagado" | "vencido" | "informativo";
@@ -67,6 +68,20 @@ export interface InvoiceData {
   tax: number;
   total: number;
   lines: { detail: string; quantity: number; unitPrice: number; total: number }[];
+}
+
+/** Reserva leída con código: del .ics de la plataforma o de las líneas del correo del cliente. */
+export interface ReservationData {
+  code: string | null;
+  date: string; // YYYY-MM-DD
+  time: string | null; // HH:MM
+  people: number;
+  name: string;
+  phone: string | null;
+  notes: string | null;
+  deposit: number | null;
+  status: "confirmada" | "cancelada" | "por_confirmar";
+  fromFile: boolean;
 }
 
 /** Cierre diario leído con código (CSV adjunto) o del texto del correo. */
@@ -111,6 +126,7 @@ export interface Extraction {
   requestedDocuments: string[];
   extractedBy: "codigo" | "claude" | "heuristica";
   settlement?: SettlementData | null;
+  reservation?: ReservationData | null;
 }
 
 export type AlertType =

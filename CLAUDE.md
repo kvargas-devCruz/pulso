@@ -7,7 +7,7 @@ Pulso es un agente que vigila el correo de una pyme costarricense: extrae factur
 
 - Requerimientos: `PRD.md`
 - Decisiones técnicas: `docs/adr/`
-- Datos de prueba: `data/bandeja-prueba/lote-1/` (48 correos ya en el buzón, 12 son cierres del datáfono y de caja) y `lote-2/` (2 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
+- Datos de prueba: `data/bandeja-prueba/lote-1/` (58 correos de un restaurante ficticio ya en el buzón: facturas, cierres del datáfono y de caja, y 10 reservas) y `lote-2/` (3 correos que "llegan en vivo"). Se generan con `python3 scripts/generar_bandeja.py`.
 - Respuesta esperada: `data/bandeja-prueba/esperado.json` (para `npm run eval`) y `resumen.md` (legible). "Hoy" en la demo es el 20/11/2026.
 - Esquema de la base de datos: `supabase/migrations/0001_init.sql` y `0002_cierres.sql`
 - Orden de trabajo y prompts por bloque: `docs/PLAYBOOK.md`

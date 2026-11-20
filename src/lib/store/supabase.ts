@@ -20,9 +20,12 @@ export class SupabaseStore implements Store {
   }
 
   private async findCompany(): Promise<string | null> {
-    const found = await this.db.from("companies").select("id").eq("tax_id", this.company.taxId).maybeSingle();
+    const found = await this.db.from("companies").select("id, name").eq("tax_id", this.company.taxId).maybeSingle();
     if (found.error) throw found.error;
-    return (found.data?.id as string | undefined) ?? null;
+    if (!found.data) return null;
+    // Si cambió el nombre configurado (p. ej. la demo pasó de ferretería a restaurante), se actualiza.
+    if (found.data.name !== this.company.name) await this.db.from("companies").update({ name: this.company.name }).eq("id", found.data.id);
+    return found.data.id as string;
   }
 
   private async cid(): Promise<string> {

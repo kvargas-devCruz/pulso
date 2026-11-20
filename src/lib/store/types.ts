@@ -35,7 +35,7 @@ export interface Store {
 }
 
 export const DEFAULT_COMPANY: Company = {
-  name: process.env.PULSO_COMPANY_NAME || "Ferretería El Roble S.A.",
+  name: process.env.PULSO_COMPANY_NAME || "Restaurante La Fogata S.A.",
   taxId: process.env.PULSO_COMPANY_TAX_ID || "3101900100",
   ownerWhatsapp: process.env.OWNER_WHATSAPP_TO || null,
   notifyLevel: "graves",

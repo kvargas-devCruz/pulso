@@ -1,9 +1,9 @@
 {
   "id": "lote-1-31",
-  "para": "facturas@ferreteriaelroble.test",
-  "remitente": "Suministros Rápidos CR <cobros@suministrosrapidos.test>",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "Hielo Polar CR <cobros@hielopolar.test>",
   "fecha": "2026-11-15T10:46:00-06:00",
-  "asunto": "Pago pendiente mercadería",
-  "cuerpo": "Buenas,\n\nLes escribimos para recordar el pago pendiente de ₡310 000 por la mercadería entregada la semana pasada. Favor depositar a la cuenta CR00 0000 0000 0000 0000 00 (ficticia) a nombre de Suministros Rápidos.\n\nGracias.",
+  "asunto": "Pago pendiente hielo de noviembre",
+  "cuerpo": "Buenas,\n\nLes escribimos para recordar el pago pendiente de ₡310 000 por el hielo entregado en noviembre. Favor depositar a la cuenta CR00 0000 0000 0000 0000 00 (ficticia) a nombre de Hielo Polar.\n\nGracias.",
   "adjuntos": []
 }

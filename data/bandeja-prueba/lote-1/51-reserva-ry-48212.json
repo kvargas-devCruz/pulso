@@ -1,0 +1,15 @@
+{
+  "id": "lote-1-51",
+  "para": "facturas@restaurantelafogata.test",
+  "remitente": "ReservaYa <reservas@reservaya.test>",
+  "fecha": "2026-11-16T11:58:00-06:00",
+  "asunto": "Nueva reserva · 21/11/2026 13:00 · 8 personas",
+  "cuerpo": "Tenés una nueva reserva confirmada en Restaurante La Fogata S.A.:\n\nNombre: Familia Rojas\nPersonas: 8\nFecha: 21/11/2026\nHora: 13:00\nTeléfono: 8800-0000 (ficticio)\nNotas: Silla para bebé\nCódigo: RY-48212\n\n(FICTICIO: simulado para la demo.)",
+  "adjuntos": [
+    {
+      "nombre": "reserva-RY-48212.ics",
+      "tipo": "text/calendar",
+      "contenido": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ReservaYa//ES\nMETHOD:PUBLISH\nBEGIN:VEVENT\nUID:RY-48212@reservaya.test\nDTSTART;TZID=America/Costa_Rica:20261121T130000\nSUMMARY:Reserva Familia Rojas · 8 personas\nX-PARTY-SIZE:8\nDESCRIPTION:Personas: 8\\nTeléfono: 8800-0000 (ficticio)\\nNotas: Silla para bebé\\nAnticipo: 0\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR\n"
+    }
+  ]
+}

@@ -2,8 +2,9 @@
 // 1) Facturas: XML con código (exacto). 2) Respuesta de Hacienda: XML con código.
 // 3) Cierres del datáfono y del software de facturación: CSV con código (o sus líneas rotuladas).
 // 4) Resto del correo: Claude si hay API key; si no (o si falla), heurística determinista.
-import type { EmailRecord, Extraction, InvoiceData, HaciendaMessage, Category, ItemKind, ItemStatus, SettlementData } from "../types";
+import type { EmailRecord, Extraction, InvoiceData, HaciendaMessage, Category, ItemKind, ItemStatus, ReservationData, SettlementData } from "../types";
 import { settlementFromEmail } from "./settlement";
+import { reservationFromEmail } from "./reservation";
 import { colones } from "../format";
 import { isFacturaXml, isMensajeHaciendaXml, parseFactura, parseMensajeHacienda } from "./xml";
 import { extractWithClaude, claudeEnabled } from "./claude";
@@ -139,6 +140,34 @@ function settlementExtraction(email: EmailRecord, st: SettlementData): Extractio
   };
 }
 
+// ------------------------------------------------------------------ reservas
+function reservationExtraction(email: EmailRecord, r: ReservationData): Extraction {
+  const [, m, d] = r.date.split("-");
+  const when = `${d}/${m}${r.time ? ` a las ${r.time}` : ""}`;
+  return {
+    emailId: email.id,
+    category: "clientes",
+    kind: "reserva",
+    counterparty: r.name,
+    counterpartyTaxId: null,
+    amount: r.deposit,
+    currency: "CRC",
+    dueDate: null,
+    status: "informativo",
+    summary: r.status === "cancelada"
+      ? `Reserva cancelada: ${r.name}, ${r.people} personas, ${when}`
+      : `Reserva${r.status === "por_confirmar" ? " por confirmar" : ""}: ${r.name}, ${r.people} personas, ${when}`,
+    invoice: null,
+    haciendaStatus: null,
+    haciendaDetail: null,
+    amountSource: r.deposit === null ? null : r.fromFile ? "archivo" : "heuristica",
+    doubtfulFields: [],
+    requestedDocuments: [],
+    extractedBy: r.fromFile ? "codigo" : "heuristica",
+    reservation: r,
+  };
+}
+
 // ------------------------------------------------------------------ heurística
 export function heuristicExtraction(email: EmailRecord, ctx: ExtractContext): Extraction {
   const name = senderName(email.sender);
@@ -229,6 +258,8 @@ export async function extractEmail(email: EmailRecord, ctx: ExtractContext): Pro
   if (invoice) return invoiceExtraction(email, invoice, ctx);
   const settlement = settlementFromEmail(email);
   if (settlement) return settlementExtraction(email, settlement);
+  const reservation = reservationFromEmail(email, senderName(email.sender));
+  if (reservation) return reservationExtraction(email, reservation);
   if (claudeEnabled()) {
     try {
       const fromClaude = await extractWithClaude(email, ctx);

@@ -42,6 +42,11 @@ Antes del inicio del hackathon el repo tenía **solo documentación y datos de p
 - Mejoras tomadas de ese análisis: bitácora en vivo al procesar correos (pasos reales revelados uno por uno, como Ramp), avatares por proveedor (como Digits/Ramp), "Lo que no cuadra" como feed con estado vacío ("Nada para revisar hoy"), y **Preguntale a Pulso** (R21) con preguntas sugeridas, también por WhatsApp. Las respuestas se calculan con código y citan los correos de respaldo.
 - `npm test`: 21 pruebas · `npm run eval`: 9/9, 0 falsos positivos.
 
+**La demo pasa a ser un restaurante + reservas (viernes en la noche):**
+- La bandeja de prueba ahora es "Restaurante La Fogata S.A." (carnes, bebidas, lácteos, mariscos, verduras, lavandería de manteles, cierre de caja de MesaFácil POS). Mismas cantidades, precios e IDs: los 9 casos plantados y sus montos no cambiaron.
+- Reservas: Pulso lee el `.ics` de la plataforma ficticia ReservaYa y los pedidos que los clientes escriben directo (quedan "por confirmar"); una cancelación reemplaza a su reserva. Apartado "Reservas" (próximos 7 días por día), tarjeta "Reservas de hoy" en Inicio y la pregunta "¿Cuántas reservas tengo hoy?" (también por WhatsApp; entiende "mañana" y días de la semana).
+- `npm run eval`: **9/9 · 0 falsos positivos · extracción 100 % (58 correos)** · `npm test`: 23 pruebas.
+
 ## Sábado 21/11
 - [ ] Qué se construyó:
 - [ ] Resultado de `npm run eval`:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Genera la bandeja de prueba de Pulso: "Ferretería El Roble S.A." (empresa FICTICIA).
+Genera la bandeja de prueba de Pulso: "Restaurante La Fogata S.A." (empresa FICTICIA).
 
 Salida (en data/bandeja-prueba/):
   lote-1/NN-*.json   correos que ya están en el buzón al iniciar la demo (hasta el 19/11/2026)
@@ -30,19 +30,19 @@ NS_FE = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElec
 NS_MH = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/mensajeHacienda"
 
 EMPRESA = {
-    "nombre": "Ferretería El Roble S.A.",
+    "nombre": "Restaurante La Fogata S.A.",
     "cedula": "3101900100",
-    "correo": "facturas@ferreteriaelroble.test",
+    "correo": "facturas@restaurantelafogata.test",
 }
 
 PROVEEDORES = {
-    "valle":   {"nombre": "Distribuidora Ferretera del Valle S.A.", "cedula": "3101900201", "correo": "facturacion@ferreteradelvalle.test", "actividad": "466302"},
-    "cemento": {"nombre": "Cementos y Agregados Tres Ríos S.A.",    "cedula": "3101900202", "correo": "fe@cementostresrios.test",           "actividad": "466301"},
-    "pintura": {"nombre": "Pinturas Arcoíris de Costa Rica S.A.",   "cedula": "3101900203", "correo": "facturas@pinturasarcoiris.test",     "actividad": "466303"},
-    "volta":   {"nombre": "Eléctricos Volta S.A.",                  "cedula": "3101900204", "correo": "facturacion@electricosvolta.test",   "actividad": "465901"},
-    "tornillo":{"nombre": "Tornillería Central S.A.",               "cedula": "3101900205", "correo": "ventas@tornilleriacentral.test",     "actividad": "466304"},
-    "pinar":   {"nombre": "Maderas El Pinar S.A.",                  "cedula": "3101900206", "correo": "facturas@maderaselpinar.test",       "actividad": "466305"},
-    "brillo":  {"nombre": "Servicios de Limpieza Brillo S.A.",      "cedula": "3101900207", "correo": "cobros@limpiezabrillo.test",         "actividad": "812100"},
+    "valle":   {"nombre": "Distribuidora de Carnes del Valle S.A.", "cedula": "3101900201", "correo": "facturacion@carnesdelvalle.test",    "actividad": "463001"},
+    "cemento": {"nombre": "Cervecería y Bebidas del Norte S.A.",     "cedula": "3101900202", "correo": "fe@bebidasdelnorte.test",            "actividad": "463002"},
+    "pintura": {"nombre": "Lácteos La Pradera S.A.",                 "cedula": "3101900203", "correo": "facturas@lacteoslapradera.test",     "actividad": "463003"},
+    "volta":   {"nombre": "Mariscos del Pacífico S.A.",              "cedula": "3101900204", "correo": "facturacion@mariscosdelpacifico.test", "actividad": "463004"},
+    "tornillo":{"nombre": "Desechables Eco S.A.",                    "cedula": "3101900205", "correo": "ventas@desechableseco.test",         "actividad": "466905"},
+    "pinar":   {"nombre": "Verdulería La Huerta S.A.",               "cedula": "3101900206", "correo": "facturas@verdulerialahuerta.test",   "actividad": "463005"},
+    "brillo":  {"nombre": "Lavandería Mantel Blanco S.A.",           "cedula": "3101900207", "correo": "cobros@mantelblanco.test",           "actividad": "960101"},
     "contador":{"nombre": "Contadores Asociados Mora & Solís",      "cedula": "3102900208", "correo": "andrea@morasolis.test",              "actividad": "692001"},
 }
 
@@ -221,52 +221,52 @@ def alerta(tipo, confianza, correos_rel, monto, razon, nota=None):
 L1 = "lote-1"
 D = lambda m, d: date(2026, m, d)
 
-# Distribuidora del Valle: historial normal + factura que se duplicará en el lote 2
-factura(L1, "valle", D(10, 15), [("Brocas para concreto 1/2\"", 40, 2150), ("Discos de corte 7\"", 60, 1100)], plazo=0)
-factura(L1, "valle", D(10, 29), [("Brocas para concreto 1/2\"", 35, 2150), ("Discos de corte 7\"", 65, 1100)], plazo=0)
+# Distribuidora de Carnes del Valle: historial normal + factura que se duplicará en el lote 2
+factura(L1, "valle", D(10, 15), [("Pechuga de pollo (kg)", 40, 2150), ("Chorizo artesanal (unidad)", 60, 1100)], plazo=0)
+factura(L1, "valle", D(10, 29), [("Pechuga de pollo (kg)", 35, 2150), ("Chorizo artesanal (unidad)", 65, 1100)], plazo=0)
 valle_orig_id, valle_doc, valle_total = factura(
-    L1, "valle", D(11, 5), [("Brocas para concreto 1/2\"", 40, 2150), ("Discos de corte 7\"", 70, 1100)],
+    L1, "valle", D(11, 5), [("Pechuga de pollo (kg)", 40, 2150), ("Chorizo artesanal (unidad)", 70, 1100)],
     slug="factura-valle-original")
 
-# Cementos Tres Ríos: 3 normales (~₡150 000) y una inusual (~₡420 000)
+# Cervecería y Bebidas del Norte: 3 normales (~₡150 000) y una inusual (~₡420 000)
 cem_ids = []
 for d_, sacos in [(D(10, 8), 22), (D(10, 22), 21), (D(11, 4), 23)]:
-    cid, _, _ = factura(L1, "cemento", d_, [("Saco de cemento gris 50 kg", sacos, 5950)], plazo=0)
+    cid, _, _ = factura(L1, "cemento", d_, [("Caja de cerveza nacional (24 u.)", sacos, 5950)], plazo=0)
     cem_ids.append(cid)
 cem_inusual_id, _, cem_inusual_total = factura(
-    L1, "cemento", D(11, 17), [("Saco de cemento gris 50 kg", 62, 5950)], slug="factura-cemento-inusual")
+    L1, "cemento", D(11, 17), [("Caja de cerveza nacional (24 u.)", 62, 5950)], slug="factura-cemento-inusual")
 
-# Pinturas Arcoíris: historial + posible duplicado probable (mismo monto, consecutivo distinto, 3 días)
-factura(L1, "pintura", D(10, 12), [("Pintura látex blanca galón", 12, 7300)], plazo=0)
-factura(L1, "pintura", D(10, 26), [("Pintura látex blanca galón", 10, 7300)], plazo=0)
-pint_a, _, pint_total = factura(L1, "pintura", D(11, 10), [("Pintura esmalte gris galón", 10, 8500)],
+# Lácteos La Pradera: historial + posible duplicado probable (mismo monto, consecutivo distinto, 3 días)
+factura(L1, "pintura", D(10, 12), [("Queso Turrialba (kg)", 12, 7300)], plazo=0)
+factura(L1, "pintura", D(10, 26), [("Queso Turrialba (kg)", 10, 7300)], plazo=0)
+pint_a, _, pint_total = factura(L1, "pintura", D(11, 10), [("Natilla y crema dulce (caja)", 10, 8500)],
                                 slug="factura-pintura-a")
-pint_b, _, _ = factura(L1, "pintura", D(11, 13), [("Pintura esmalte gris galón", 10, 8500)],
+pint_b, _, _ = factura(L1, "pintura", D(11, 13), [("Natilla y crema dulce (caja)", 10, 8500)],
                        slug="factura-pintura-b-posible-duplicado")
 
-# Eléctricos Volta: historial + factura RECHAZADA por Hacienda
-factura(L1, "volta", D(10, 9), [("Cable eléctrico #12 (rollo 100 m)", 4, 27500)], plazo=0)
-factura(L1, "volta", D(10, 30), [("Cable eléctrico #12 (rollo 100 m)", 3, 27500)], plazo=0)
+# Mariscos del Pacífico: historial + factura RECHAZADA por Hacienda
+factura(L1, "volta", D(10, 9), [("Camarón jumbo (caja 5 kg)", 4, 27500)], plazo=0)
+factura(L1, "volta", D(10, 30), [("Camarón jumbo (caja 5 kg)", 3, 27500)], plazo=0)
 volta_rech_id, _, volta_total = factura(
-    L1, "volta", D(11, 12), [("Cable eléctrico #12 (rollo 100 m)", 3, 27500), ("Tomacorrientes dobles", 10, 1450)],
+    L1, "volta", D(11, 12), [("Camarón jumbo (caja 5 kg)", 3, 27500), ("Limones (bolsa)", 10, 1450)],
     hacienda="rechazado", slug="factura-volta-rechazada")
 
-# Tornillería Central: historial + factura SIN respuesta de Hacienda
-factura(L1, "tornillo", D(10, 20), [("Tornillo gypsum 1\" (caja 1000)", 15, 3900)], plazo=0)
-torn_sin_id, _, torn_total = factura(L1, "tornillo", D(11, 18), [("Tornillo gypsum 1\" (caja 1000)", 16, 3900)],
+# Desechables Eco: historial + factura SIN respuesta de Hacienda
+factura(L1, "tornillo", D(10, 20), [("Empaques biodegradables para llevar (paq. 100)", 15, 3900)], plazo=0)
+torn_sin_id, _, torn_total = factura(L1, "tornillo", D(11, 18), [("Empaques biodegradables para llevar (paq. 100)", 16, 3900)],
                                      hacienda="sin_respuesta", slug="factura-tornillo-sin-respuesta")
 
-# Maderas El Pinar: caso para ENSEÑAR (temporada)
-factura(L1, "pinar", D(9, 18), [("Tabla de pino 1x10x4 vrs", 90, 1950)], plazo=0)
-factura(L1, "pinar", D(10, 16), [("Tabla de pino 1x10x4 vrs", 92, 1950)], plazo=0)
+# Verdulería La Huerta: caso para ENSEÑAR (temporada)
+factura(L1, "pinar", D(9, 18), [("Caja de verduras surtidas", 90, 1950)], plazo=0)
+factura(L1, "pinar", D(10, 16), [("Caja de verduras surtidas", 92, 1950)], plazo=0)
 pinar_t1_id, _, pinar_t1_total = factura(
-    L1, "pinar", D(11, 14), [("Tabla de pino 1x10x4 vrs", 165, 1950)],
-    cuerpo_extra="Les recordamos que en temporada navideña el pedido de tablas aumenta, por eso el volumen de este mes.",
+    L1, "pinar", D(11, 14), [("Caja de verduras surtidas", 165, 1950)],
+    cuerpo_extra="Les recordamos que en temporada navideña su pedido de verduras aumenta por las cenas de fin de año.",
     slug="factura-pinar-temporada-1")
 
-# Limpieza Brillo: servicio mensual normal
-factura(L1, "brillo", D(10, 1), [("Servicio de limpieza mensual", 1, 84000)], plazo=0)
-factura(L1, "brillo", D(11, 1), [("Servicio de limpieza mensual", 1, 84000)], plazo=30)
+# Lavandería Mantel Blanco: servicio mensual normal
+factura(L1, "brillo", D(10, 1), [("Lavado de manteles y servilletas (mes)", 1, 84000)], plazo=0)
+factura(L1, "brillo", D(11, 1), [("Lavado de manteles y servilletas (mes)", 1, 84000)], plazo=30)
 
 # Contador: honorarios (factura) + mensajes
 factura(L1, "contador", D(11, 3), [("Honorarios contables noviembre 2026", 1, 75000)], plazo=0,
@@ -275,15 +275,15 @@ factura(L1, "contador", D(11, 3), [("Honorarios contables noviembre 2026", 1, 75
 cont = PROVEEDORES["contador"]
 correo_simple(L1, "contador-pide-documentos", f"Andrea Mora <{cont['correo']}>", D(11, 11),
               "Documentos pendientes para el cierre de octubre",
-              "Hola, don Ricardo:\n\nPara cerrar octubre necesito, a más tardar el 25 de noviembre:\n"
+              "Hola, doña Carmen:\n\nPara cerrar octubre necesito, a más tardar el 25 de noviembre:\n"
               "1. Estado de cuenta bancario de octubre.\n2. Comprobantes de las ventas en efectivo de octubre.\n"
-              "3. El contrato del nuevo alquiler de la bodega.\n\nQuedo atenta,\nAndrea Mora\nContadores Asociados Mora & Solís",
+              "3. La copia del permiso sanitario de funcionamiento renovado.\n\nQuedo atenta,\nAndrea Mora\nContadores Asociados Mora & Solís",
               {"categoria": "contador", "tipo": "solicitud", "contraparte": cont["nombre"], "monto": None,
                "vencimiento": "2026-11-25", "estado": "pendiente",
-               "documentos_pedidos": ["estado de cuenta octubre", "comprobantes ventas efectivo octubre", "contrato alquiler bodega"]})
+               "documentos_pedidos": ["estado de cuenta octubre", "comprobantes ventas efectivo octubre", "permiso sanitario renovado"]})
 correo_simple(L1, "contador-iva", f"Andrea Mora <{cont['correo']}>", D(11, 13),
               "IVA de octubre presentado",
-              "Hola, don Ricardo:\n\nYa presenté la declaración del IVA de octubre en TRIBU-CR. El monto a pagar fue ₡612 300 "
+              "Hola, doña Carmen:\n\nYa presenté la declaración del IVA de octubre en TRIBU-CR. El monto a pagar fue ₡612 300 "
               "y quedó cancelado con el débito automático del 14/11. Adjunto el comprobante en el portal.\n\nSaludos,\nAndrea",
               {"categoria": "contador", "tipo": "aviso", "contraparte": cont["nombre"], "monto": 612300,
                "vencimiento": None, "estado": "pagado"})
@@ -306,7 +306,7 @@ correo_simple(L1, "hacienda-buzon", "TRIBU-CR <no-responder@hacienda.test>", D(1
 # CCSS e INS
 correo_simple(L1, "ccss-planilla", "CCSS - SICERE <sicere@ccss.test>", D(11, 16),
               "Facturación de planilla noviembre 2026",
-              "Patrono: Ferretería El Roble S.A.\n\nSe generó la factura de cuotas obrero-patronales del período noviembre 2026 "
+              "Patrono: Restaurante La Fogata S.A.\n\nSe generó la factura de cuotas obrero-patronales del período noviembre 2026 "
               "por ₡1 248 750. Fecha límite de pago: 26/11/2026. Evite recargos por mora.\n\n(FICTICIO: simulado para la demo.)",
               {"categoria": "ccss", "tipo": "cobro", "contraparte": "CCSS", "monto": 1248750,
                "vencimiento": "2026-11-26", "estado": "pendiente"})
@@ -333,31 +333,31 @@ correo_simple(L1, "banco-estado-cuenta", "Banco Horizonte <estados@bancohorizont
                "vencimiento": None, "estado": "informativo"})
 
 # Cobro SIN factura
-cobro_sf_id = correo_simple(L1, "cobro-sin-factura", "Suministros Rápidos CR <cobros@suministrosrapidos.test>", D(11, 15),
-                            "Pago pendiente mercadería",
-                            "Buenas,\n\nLes escribimos para recordar el pago pendiente de ₡310 000 por la mercadería entregada la semana pasada. "
-                            "Favor depositar a la cuenta CR00 0000 0000 0000 0000 00 (ficticia) a nombre de Suministros Rápidos.\n\nGracias.",
-                            {"categoria": "proveedores", "tipo": "cobro", "contraparte": "Suministros Rápidos CR", "monto": 310000,
+cobro_sf_id = correo_simple(L1, "cobro-sin-factura", "Hielo Polar CR <cobros@hielopolar.test>", D(11, 15),
+                            "Pago pendiente hielo de noviembre",
+                            "Buenas,\n\nLes escribimos para recordar el pago pendiente de ₡310 000 por el hielo entregado en noviembre. "
+                            "Favor depositar a la cuenta CR00 0000 0000 0000 0000 00 (ficticia) a nombre de Hielo Polar.\n\nGracias.",
+                            {"categoria": "proveedores", "tipo": "cobro", "contraparte": "Hielo Polar CR", "monto": 310000,
                              "vencimiento": None, "estado": "pendiente"})
 
 # Clientes
-correo_simple(L1, "cliente-pago-recibido", "Constructora Altamira <pagos@constructoraaltamira.test>", D(11, 12),
+correo_simple(L1, "cliente-pago-recibido", "Hotel Vista Volcán <pagos@hotelvistavolcan.test>", D(11, 12),
               "Comprobante de pago factura 00100001010000000231",
               "Hola,\n\nAdjuntamos comprobante de la transferencia SINPE por ₡236 500 correspondiente a su factura "
-              "00100001010000000231. Gracias.\n\nConstructora Altamira",
-              {"categoria": "clientes", "tipo": "pago_recibido", "contraparte": "Constructora Altamira", "monto": 236500,
+              "00100001010000000231 (almuerzo del congreso). Gracias.\n\nHotel Vista Volcán",
+              {"categoria": "clientes", "tipo": "pago_recibido", "contraparte": "Hotel Vista Volcán", "monto": 236500,
                "vencimiento": None, "estado": "pagado"})
-cliente_pend_id = correo_simple(L1, "cliente-pago-pendiente", "Condominio Las Lomas <admin@condolaslomas.test>", D(11, 14),
+cliente_pend_id = correo_simple(L1, "cliente-pago-pendiente", "Eventos Corporativos Altamira <admin@eventosaltamira.test>", D(11, 14),
                                 "RE: Factura 00100001010000000245",
-                                "Buenas tardes,\n\nRecibimos su factura 00100001010000000245 por ₡560 000 (vencía el 04/11). "
-                                "Disculpen el atraso; la estaremos pagando a fin de mes.\n\nAdministración Condominio Las Lomas",
-                                {"categoria": "clientes", "tipo": "cobro_pendiente", "contraparte": "Condominio Las Lomas",
+                                "Buenas tardes,\n\nRecibimos su factura 00100001010000000245 por ₡560 000 del catering (vencía el 04/11). "
+                                "Disculpen el atraso; la estaremos pagando a fin de mes.\n\nAdministración Eventos Corporativos Altamira",
+                                {"categoria": "clientes", "tipo": "cobro_pendiente", "contraparte": "Eventos Corporativos Altamira",
                                  "monto": 560000, "vencimiento": "2026-11-04", "estado": "vencido",
                                  "nota": "Dinero que le DEBEN a la empresa (por cobrar), no que debe."})
 
 # Ruido
 for slug, rem, asunto in [
-    ("ruido-promo-herramientas", "HerraMax Ofertas <promo@herramax.test>", "🔥 Black Friday: 40% en herramientas eléctricas"),
+    ("ruido-promo-equipo", "GastroMax Ofertas <promo@gastromax.test>", "🔥 Black Friday: 40% en freidoras industriales"),
     ("ruido-boletin", "Cámara de Comercio Ficticia <boletin@camaraficticia.test>", "Boletín semanal de comercio"),
     ("ruido-webinar", "Marketing Pyme <hola@marketingpyme.test>", "Webinar gratis: vendé más en Instagram"),
 ]:
@@ -371,7 +371,7 @@ for slug, rem, asunto in [
 # Todos cuadran (tarjeta en facturación = bruto del datáfono) excepto el 17/11: faltan ₡45 000.
 rng = random.Random(1711)
 DATAFONO = {"nombre": "Banco Horizonte", "correo": "cierres@bancohorizonte.test"}
-SOFTWARE = {"nombre": "FacturaÁgil", "correo": "cierres@facturaagil.test"}
+SOFTWARE = {"nombre": "MesaFácil POS", "correo": "cierres@mesafacil.test"}
 DIA_DESCUADRE, FALTANTE = D(11, 17), 45000
 cierre_ids = {}
 for i, dia in enumerate([D(11, 12), D(11, 13), D(11, 16), D(11, 17), D(11, 18), D(11, 19)]):
@@ -416,14 +416,81 @@ for i, dia in enumerate([D(11, 12), D(11, 13), D(11, 16), D(11, 17), D(11, 18), 
          "cierre": {"fecha": iso, "tarjeta": bruto, "comision": comision, "neto": neto}})
     cierre_ids[dia] = (caja_id, dat_id)
 
+# Reservas: plataforma ficticia "ReservaYa" (con .ics) y clientes que escriben directo (solo texto).
+# Al final del lote 1 para no cambiar los IDs anteriores. Una se cancela; dos directas quedan por confirmar.
+PLATAFORMA = {"nombre": "ReservaYa", "correo": "reservas@reservaya.test"}
+
+
+def ics(codigo, d, hora, minuto, nombre, personas, telefono, notas, anticipo, estado="CONFIRMED"):
+    desc = f"Personas: {personas}\\nTeléfono: {telefono}\\nNotas: {notas or '-'}\\nAnticipo: {anticipo or 0}"
+    return ("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ReservaYa//ES\nMETHOD:PUBLISH\nBEGIN:VEVENT\n"
+            f"UID:{codigo}@reservaya.test\n"
+            f"DTSTART;TZID=America/Costa_Rica:{d.strftime('%Y%m%d')}T{hora:02d}{minuto:02d}00\n"
+            f"SUMMARY:Reserva {nombre} · {personas} personas\n"
+            f"X-PARTY-SIZE:{personas}\n"
+            f"DESCRIPTION:{desc}\n"
+            f"STATUS:{estado}\nEND:VEVENT\nEND:VCALENDAR\n")
+
+
+def reserva(lote, codigo, recibido, d, hora, minuto, nombre, personas, notas=None, anticipo=None, cancelada=False):
+    f = d.strftime("%d/%m/%Y")
+    hh = f"{hora:02d}:{minuto:02d}"
+    tel = "8800-0000 (ficticio)"
+    asunto = (f"Reserva cancelada · {f} {hh} · {personas} personas" if cancelada
+              else f"Nueva reserva · {f} {hh} · {personas} personas")
+    cuerpo = ((f"La reserva {codigo} fue cancelada por el cliente.\n\n" if cancelada
+               else f"Tenés una nueva reserva confirmada en {EMPRESA['nombre']}:\n\n")
+              + f"Nombre: {nombre}\nPersonas: {personas}\nFecha: {f}\nHora: {hh}\nTeléfono: {tel}\n"
+              + (f"Notas: {notas}\n" if notas else "")
+              + (f"Anticipo: {colones(anticipo)}\n" if anticipo else "")
+              + f"Código: {codigo}\n\n(FICTICIO: simulado para la demo.)")
+    return agregar(lote, f"reserva-{codigo.lower()}{'-cancelada' if cancelada else ''}", {
+        "remitente": f"{PLATAFORMA['nombre']} <{PLATAFORMA['correo']}>", "fecha": ts(recibido, 11, rrng.randint(0, 59)),
+        "asunto": asunto, "cuerpo": cuerpo,
+        "adjuntos": [{"nombre": f"reserva-{codigo}.ics", "tipo": "text/calendar",
+                      "contenido": ics(codigo, d, hora, minuto, nombre, personas, tel, notas, anticipo,
+                                       "CANCELLED" if cancelada else "CONFIRMED")}]},
+        {"categoria": "clientes", "tipo": "reserva", "contraparte": nombre, "monto": float(anticipo) if anticipo else None,
+         "moneda": "CRC", "vencimiento": None, "estado": "informativo", "fuente_monto": "archivo" if anticipo else None,
+         "reserva": {"codigo": codigo, "fecha": d.isoformat(), "hora": hh, "personas": personas,
+                     "estado": "cancelada" if cancelada else "confirmada", "anticipo": anticipo}})
+
+
+rrng = random.Random(2011)
+reserva(L1, "RY-48201", D(11, 15), D(11, 20), 19, 0, "Ana Vargas", 4)
+reserva(L1, "RY-48207", D(11, 16), D(11, 20), 20, 30, "Carlos Jiménez", 2, notas="Aniversario, mesa tranquila")
+reserva(L1, "RY-48212", D(11, 16), D(11, 21), 13, 0, "Familia Rojas", 8, notas="Silla para bebé")
+reserva(L1, "RY-48213", D(11, 17), D(11, 21), 19, 30, "María Solano", 14, notas="Cumpleaños, terraza", anticipo=50000)
+reserva(L1, "RY-48220", D(11, 17), D(11, 22), 20, 0, "Pedro Mora", 4)
+reserva(L1, "RY-48224", D(11, 18), D(11, 24), 19, 0, "Sofía Castro", 3)
+reserva(L1, "RY-48231", D(11, 19), D(11, 27), 20, 0, "Laura Méndez", 2, notas="Alergia a los mariscos")
+reserva(L1, "RY-48220", D(11, 19), D(11, 22), 20, 0, "Pedro Mora", 4, cancelada=True)
+correo_simple(L1, "reserva-directa-familia", "Luis Fernández <luisf@correo.test>", D(11, 18),
+              "Reserva para el domingo",
+              "Hola, buenas.\n\nQuisiera reservar mesa para 8 personas el domingo 22/11/2026 a las 12:30. "
+              "Es un almuerzo familiar.\n\nMuchas gracias,\nLuis Fernández\n(FICTICIO: simulado para la demo.)",
+              {"categoria": "clientes", "tipo": "reserva", "contraparte": "Luis Fernández", "monto": None,
+               "vencimiento": None, "estado": "informativo",
+               "reserva": {"fecha": "2026-11-22", "hora": "12:30", "personas": 8, "estado": "por_confirmar"}})
+correo_simple(L1, "reserva-directa-empresa", "Datacorp CR <eventos@datacorp.test>", D(11, 19),
+              "Cena de fin de año: reserva para 20 personas",
+              "Buenas tardes:\n\nQueremos reservar para 20 personas el jueves 26/11/2026 a las 18:30 para nuestra cena "
+              "de fin de año. Podemos dejar un adelanto de ₡100 000.\n\nSaludos,\nRecursos Humanos, Datacorp CR\n"
+              "(FICTICIO: simulado para la demo.)",
+              {"categoria": "clientes", "tipo": "reserva", "contraparte": "Datacorp CR", "monto": 100000,
+               "vencimiento": None, "estado": "informativo",
+               "reserva": {"fecha": "2026-11-26", "hora": "18:30", "personas": 20, "estado": "por_confirmar", "anticipo": 100000}})
+
 # ---------------------------------------------------------------- LOTE 2 (llega en vivo)
 L2 = "lote-2"
 valle_dup_id, _, _ = factura(
     L2, "valle", D(11, 20), None, reenvio_de=valle_doc,
     cuerpo_extra="Reenviamos la factura por si no la recibieron.", slug="factura-valle-REENVIO-duplicado")
 pinar_t2_id, _, pinar_t2_total = factura(
-    L2, "pinar", D(11, 20), [("Tabla de pino 1x10x4 vrs", 200, 1950)],
+    L2, "pinar", D(11, 20), [("Caja de verduras surtidas", 200, 1950)],
     cuerpo_extra="Segundo pedido de temporada navideña.", slug="factura-pinar-temporada-2")
+
+reserva_hoy_id = reserva(L2, "RY-48240", D(11, 20), D(11, 20), 20, 0, "Andrés Quesada", 10, notas="Despedida de soltero")
 
 # ---------------------------------------------------------------- ALERTAS ESPERADAS
 alerta("duplicado", "alta", [valle_orig_id, valle_dup_id], valle_total,
@@ -467,7 +534,7 @@ with open(os.path.join(OUT, "esperado.json"), "w", encoding="utf-8") as f:
     json.dump(esperado, f, ensure_ascii=False, indent=2)
 
 # resumen.md legible
-lineas = ["# Bandeja de prueba: Ferretería El Roble S.A. (FICTICIA)", "",
+lineas = ["# Bandeja de prueba: Restaurante La Fogata S.A. (FICTICIA)", "",
           f"Hoy en la demo: **{HOY.strftime('%d/%m/%Y')}**. Generada con `scripts/generar_bandeja.py` (reproducible).",
           "Todo es inventado. Los XML siguen de forma simplificada la factura electrónica v4.4 y el mensaje de Hacienda, sin firma digital.",
           "", f"- Lote 1 (ya en el buzón): **{len(correos['lote-1'])} correos**",
@@ -484,7 +551,7 @@ for a in esperado["alertas"]:
                   + (f" *{a['nota']}*" if a.get("nota") else "") + " |")
 lineas += ["", "## Revisar (confianza baja, no es alerta)", ""]
 lineas += [f"- {r['correo']}: {r['razon']}" for r in esperado["revisar"]]
-lineas += ["", "## Aprendizaje", "", "- Marcar como normal la alerta de Maderas El Pinar (lote 1).",
+lineas += ["", "## Aprendizaje", "", "- Marcar como normal la alerta de Verdulería La Huerta (lote 1).",
            f"- Al procesar el lote 2, **{pinar_t2_id}** no debe alertar: estado `normal_aprendido`, en gris.", "",
            "## Próximos 7 días", ""] + [f"- {p}" for p in esperado["proximos_7_dias"]]
 lineas += ["", "## Semáforo esperado", "",
@@ -492,8 +559,8 @@ lineas += ["", "## Semáforo esperado", "",
            f"- Después del lote 2: **{esperado['semaforo']['despues_lote_2']}**",
            "", "## Guion de la demo con estos datos", "",
            "1. Procesar el **lote 1** → semáforo rojo, bitácora y alertas (rechazo de Hacienda, cemento inusual, pintura probable, cobro sin factura, vencidos y el cierre del 17/11 que no cuadra).",
-           "2. Marcar **Maderas El Pinar** como normal (\"2\" en WhatsApp).",
-           "3. Procesar el **lote 2** (\"llegó un correo\") → **duplicado exacto de Distribuidora del Valle** → WhatsApp → \"1\" → borrador en Gmail.",
+           "2. Marcar **Verdulería La Huerta** como normal (\"2\" en WhatsApp).",
+           "3. Procesar el **lote 2** (\"llegó un correo\") → **duplicado exacto de Distribuidora de Carnes del Valle** → WhatsApp → \"1\" → borrador en Gmail. También llega una reserva nueva para hoy.",
            f"4. Mostrar que **{pinar_t2_id}** quedó en gris: \"Normal según tu decisión\"."]
 with open(os.path.join(OUT, "resumen.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(lineas) + "\n")

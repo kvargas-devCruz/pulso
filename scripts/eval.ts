@@ -105,7 +105,7 @@ async function main() {
   const reviewOk = (expected.revisar as { correo: string }[]).every((r) => state.review.some((x) => x.emailId === "demo-" + r.correo));
   console.log(`  ${ok(reviewOk)} "revisar" (sin respuesta de Hacienda)`);
 
-  // ---------------- Enseñar: Maderas El Pinar es normal
+  // ---------------- Enseñar: Verdulería La Huerta es normal
   const pinar = (await store.listAlerts()).find((a) => a.type === "monto_inusual" && a.confidence === "media");
   if (pinar) await markNormal(store, pinar.id, "whatsapp", "Temporada navideña");
   console.log(`\nEnseñanza: "${pinar?.counterparty}" marcado como normal ${ok(!!pinar)}`);
